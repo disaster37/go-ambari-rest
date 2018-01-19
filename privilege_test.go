@@ -36,7 +36,7 @@ func (s *ClientTestSuite) TestPrivilege() {
 
 	// Update privilege
 	privilege.PrivilegeInfo.PermissionName = "CLUSTER.OPERATOR"
-	_, err = s.client.UpdatePrivilege("sihm-test", privilege)
+	privilege, err = s.client.UpdatePrivilege("sihm-test", privilege)
 	assert.NoError(s.T(), err)
 
 	// Delete privilege

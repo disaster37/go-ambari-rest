@@ -7,6 +7,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+
+// Ambari documentation: https://community.hortonworks.com/questions/90797/manage-ambari-user-roles.html?childToView=90801
+
 type Privilege struct {
 	Response
 	PrivilegeInfo *PrivilegeInfo `json:"PrivilegeInfo"`
@@ -23,6 +26,11 @@ type PrivilegeInfo struct {
 	PermissionName  string `json:"permission_name"`
 	PrincipalName   string `json:"principal_name"`
 	PrincipalType   string `json:"principal_type"`
+}
+
+func (p *Privilege) String() string {
+	json, _ := json.Marshal(p)
+	return string(json)
 }
 
 func (c *AmbariClient) Privilege(clusterName string, id int64) (*Privilege, error) {
@@ -76,28 +84,15 @@ func (c *AmbariClient) CreatePrivilege(clusterName string, privilege *Privilege)
 	}
 
 	// Get the privilege
-	resp, err = c.Client().R().SetQueryParams(map[string]string{
-		"PrivilegeInfo/permission_name": privilege.PrivilegeInfo.PermissionName,
-		"PrivilegeInfo/principal_name":  privilege.PrivilegeInfo.PrincipalName,
-		"PrivilegeInfo/principal_type":  privilege.PrivilegeInfo.PrincipalType,
-	}).Get(path)
+	privilege, err = c.SearchPrivilege(clusterName, privilege.PrivilegeInfo.PermissionName, privilege.PrivilegeInfo.PrincipalName, privilege.PrivilegeInfo.PrincipalType)
 	if err != nil {
-		return nil, err
+	    return nil, err
 	}
-	log.Debug("Response to get: ", resp)
-	privilegeResponses := &PrivilegesResponse{}
-	err = json.Unmarshal(resp.Body(), privilegeResponses)
-	if err != nil {
-		return nil, err
+	if privilege == nil {
+	    return nil, errors.New("Can't get privilege that just created")
 	}
-	log.Debug("PrivilegesResponse: ", privilegeResponses)
-
-	if len(privilegeResponses.Items) > 0 {
-		log.Debug("Privilege: ", privilegeResponses.Items[0])
-		return &privilegeResponses.Items[0], nil
-	} else {
-		return nil, nil
-	}
+	
+	return privilege, err
 
 }
 
@@ -146,6 +141,59 @@ func (c *AmbariClient) UpdatePrivilege(clusterName string, privilege *Privilege)
 		return nil, errors.New(resp.Status())
 	}
 
-	return privilege, nil
+	
+	// Get the privilege because id and permission label change after update
+	privilege, err = c.SearchPrivilege(clusterName, privilege.PrivilegeInfo.PermissionName, privilege.PrivilegeInfo.PrincipalName, privilege.PrivilegeInfo.PrincipalType)
+	if err != nil {
+	    return nil, err
+	}
+	if privilege == nil {
+	    return nil, errors.New("Can't get privilege that just created")
+	}
+	
+	return privilege, err
 
+}
+
+
+func (c *AmbariClient) SearchPrivilege(clusterName string, permissionName string, principalName string,  principalType string) (*Privilege, error) {
+    
+    if clusterName == "" {
+        panic("ClusterName can't be empty")
+    }
+    if permissionName == "" {
+        panic("PermissionName can't be empty")
+    }
+    if principalName == "" {
+        panic("PrincipalName can't be empty")
+    }
+    if principalType == "" {
+        panic("PrincipalType can't be empty")
+    }
+    
+    
+	path := fmt.Sprintf("/clusters/%s/privileges", clusterName)
+
+	resp, err := c.Client().R().SetQueryParams(map[string]string{
+		"PrivilegeInfo/permission_name": permissionName,
+		"PrivilegeInfo/principal_name":  principalName,
+		"PrivilegeInfo/principal_type":  principalType,
+	}).Get(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Response to get: ", resp)
+	privilegeResponses := &PrivilegesResponse{}
+	err = json.Unmarshal(resp.Body(), privilegeResponses)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("PrivilegesResponse: ", privilegeResponses)
+
+	if len(privilegeResponses.Items) > 0 {
+		log.Debug("Privilege: ", privilegeResponses.Items[0])
+		return &privilegeResponses.Items[0], nil
+	} else {
+		return nil, nil
+	}
 }
