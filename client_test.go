@@ -19,6 +19,21 @@ func (s *ClientTestSuite) SetupSuite() {
 	s.client = New("https://10.221.78.60:5010/api/v1", "admin", "admin")
 	s.client.DisableVerifySSL()
 
+	// Remove cluster
+	s.client.DeleteCluster("test")
+
+	// Create freash cluster
+	cluster := &Cluster{
+		Cluster: &ClusterInfo{
+			Version:     "HDP-2.6",
+			ClusterName: "test",
+		},
+	}
+	cluster, err := s.client.CreateCluster(cluster)
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 func TestClientTestSuite(t *testing.T) {

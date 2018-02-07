@@ -16,10 +16,10 @@ type HostComponent struct {
 
 type HostComponentInfo struct {
 	ClusterName   string `json:"cluster_name"`
-	ComponentName   string `json:"component_name,omitempty"`
-	HostName string `json:"host_name,omitempty"`
-	State string `json:"state,omitempty"`
-	DesiredState string  `json:"desired_state,omitempty"`
+	ComponentName string `json:"component_name,omitempty"`
+	Hostname      string `json:"host_name,omitempty"`
+	State         string `json:"state,omitempty"`
+	DesiredState  string `json:"desired_state,omitempty"`
 }
 
 func (h *HostComponent) String() string {
@@ -27,17 +27,16 @@ func (h *HostComponent) String() string {
 	return string(json)
 }
 
-
 func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostComponent, error) {
 
 	if hostComponent == nil {
 		panic("HostComponent can't be nil")
 	}
-	
+
 	log.Debug("HostComponent: %s", hostComponent.String())
 
 	// Create the Host component
-	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.HostName, hostComponent.HostComponentInfo.ComponentName)
+	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
 	resp, err := c.Client().R().Post(path)
 	if err != nil {
 		return nil, err
@@ -46,7 +45,7 @@ func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostC
 	if resp.StatusCode() >= 300 {
 		return nil, errors.New(resp.Status())
 	}
-	
+
 	// Force to install
 	hostComponent.HostComponentInfo.State = "INSTALLED"
 	hostComponent, err = c.UpdateHostComponent(hostComponent)
@@ -59,18 +58,18 @@ func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostC
 }
 
 // Get cluster by ID is not supported by ambari api
-func (c *AmbariClient) HostComponent(clusterName string, hostName string, componentName string) (*HostComponent, error) {
+func (c *AmbariClient) HostComponent(clusterName string, hostname string, componentName string) (*HostComponent, error) {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
 	}
-	if hostName == "" {
-	    panic("HostName can't be empty")
+	if hostname == "" {
+		panic("Hostname can't be empty")
 	}
 	if componentName == "" {
-	    panic("ComponentName can't be empty")
+		panic("ComponentName can't be empty")
 	}
-	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", clusterName, hostName, componentName)
+	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", clusterName, hostname, componentName)
 
 	// Get the host components
 	resp, err := c.Client().R().Get(path)
@@ -88,7 +87,6 @@ func (c *AmbariClient) HostComponent(clusterName string, hostName string, compon
 	return hostComponent, nil
 }
 
-
 func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostComponent, error) {
 
 	if hostComponent == nil {
@@ -97,7 +95,7 @@ func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostC
 	log.Debug("HostComponent: ", hostComponent)
 
 	// Update the Cluster
-	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.HostName, hostComponent.HostComponentInfo.ComponentName)
+	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
 	jsonData, err := json.Marshal(hostComponent)
 	if err != nil {
 		return nil, err
@@ -112,7 +110,7 @@ func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostC
 	}
 
 	// Get the HostComponent
-	hostComponent, err = c.HostComponent(hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.HostName, hostComponent.HostComponentInfo.ComponentName)
+	hostComponent, err = c.HostComponent(hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
 	if err != nil {
 		return nil, err
 	}
@@ -126,19 +124,18 @@ func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostC
 
 }
 
-func (c *AmbariClient) DeleteHostComponent(clusterName string, hostName string, componentName string) error {
+func (c *AmbariClient) DeleteHostComponent(clusterName string, hostname string, componentName string) error {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
 	}
-	if hostName == "" {
-	    panic("HostName can't be empty")
+	if hostname == "" {
+		panic("HostName can't be empty")
 	}
 	if componentName == "" {
-	    panic("ComponentName can't be empty")
+		panic("ComponentName can't be empty")
 	}
-	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", clusterName, hostName, componentName)
-
+	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", clusterName, hostname, componentName)
 
 	resp, err := c.Client().R().Delete(path)
 	if err != nil {

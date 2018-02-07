@@ -11,14 +11,14 @@ import (
 
 type Host struct {
 	Response
-	HostInfo *HostComponentInfo `json:"Hosts"`
+	HostInfo *HostInfo `json:"Hosts"`
 }
 
 type HostInfo struct {
-	ClusterName      string `json:"cluster_name"`
-	HostName         string `json:"host_name"`
-	MaintenanceState string `json:"maintenance_state"`
-	Rack             string `json:"rack_info"`
+	ClusterName      string `json:"cluster_name,omitempty"`
+	Hostname         string `json:"host_name,omitempty"`
+	MaintenanceState string `json:"maintenance_state,omitempty"`
+	Rack             string `json:"rack_info,omitempty"`
 }
 
 func (h *Host) String() string {
@@ -35,7 +35,7 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 	log.Debug("Host: %s", host.String())
 
 	// Create the Host component
-	path := fmt.Sprintf("/clusters/%s/hosts/%s", host.HostInfo.ClusterName, host.HostInfo.HostName)
+	path := fmt.Sprintf("/clusters/%s/hosts/%s", host.HostInfo.ClusterName, host.HostInfo.Hostname)
 	jsonData, err := json.Marshal(host)
 	if err != nil {
 		return nil, err
@@ -49,7 +49,12 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 		return nil, errors.New(resp.Status())
 	}
 
-	host, err = c.Host(host.HostInfo.ClusterName, host.HostInfo.HostName)
+	host, err = c.UpdateHost(host)
+	if err != nil {
+		return nil, err
+	}
+
+	host, err = c.Host(host.HostInfo.ClusterName, host.HostInfo.Hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -57,21 +62,23 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 		return nil, errors.New("Can't get host that just created")
 	}
 
+	log.Debug("Return host: %s", host)
+
 	return host, nil
 
 }
 
 // Get cluster by ID is not supported by ambari api
-func (c *AmbariClient) Host(clusterName string, hostName string) (*Host, error) {
+func (c *AmbariClient) Host(clusterName string, hostname string) (*Host, error) {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
 	}
-	if hostName == "" {
+	if hostname == "" {
 		panic("HostName can't be empty")
 	}
 
-	path := fmt.Sprintf("/clusters/%s/hosts/%s", clusterName, hostName)
+	path := fmt.Sprintf("/clusters/%s/hosts/%s", clusterName, hostname)
 
 	// Get the host components
 	resp, err := c.Client().R().Get(path)
@@ -84,7 +91,7 @@ func (c *AmbariClient) Host(clusterName string, hostName string) (*Host, error) 
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Host: ", host)
+	log.Debug("Return host: %s", host)
 
 	return host, nil
 }
@@ -96,7 +103,7 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 	}
 	log.Debug("Host: ", host)
 
-	path := fmt.Sprintf("/clusters/%s/hosts/%s", host.HostInfo.ClusterName, host.HostInfo.HostName)
+	path := fmt.Sprintf("/clusters/%s/hosts/%s", host.HostInfo.ClusterName, host.HostInfo.Hostname)
 	jsonData, err := json.Marshal(host)
 	if err != nil {
 		return nil, err
@@ -111,7 +118,7 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 	}
 
 	// Get the Host
-	host, err = c.Host(host.HostInfo.ClusterName, host.HostInfo.HostName)
+	host, err = c.Host(host.HostInfo.ClusterName, host.HostInfo.Hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -119,21 +126,21 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 		return nil, errors.New("Can't get host that just updated")
 	}
 
-	log.Debug("Host: ", host)
+	log.Debug("Return host: %s", host.String())
 
 	return host, err
 
 }
 
-func (c *AmbariClient) DeleteHost(clusterName string, hostName string) error {
+func (c *AmbariClient) DeleteHost(clusterName string, hostname string) error {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
 	}
-	if hostName == "" {
-		panic("HostName can't be empty")
+	if hostname == "" {
+		panic("Hostname can't be empty")
 	}
-	path := fmt.Sprintf("/clusters/%s/hosts/%s", clusterName, hostName)
+	path := fmt.Sprintf("/clusters/%s/hosts/%s", clusterName, hostname)
 
 	resp, err := c.Client().R().Delete(path)
 	if err != nil {
