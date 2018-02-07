@@ -1,0 +1,15 @@
+{
+  "blueprint" : "test",
+  "default_password" : "MyP@ssw0rd",
+  "config_recommendation_strategy": "ALWAYS_APPLY_DONT_OVERRIDE_CUSTOM_VALUES",
+  "host_groups" :[
+    {
+      "name" : "host_group_1", 
+      "hosts" : [         
+        {
+          "fqdn" : "ambari.local.local"
+        }
+      ]
+    }
+  ]
+}

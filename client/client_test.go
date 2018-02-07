@@ -16,7 +16,7 @@ func (s *ClientTestSuite) SetupSuite() {
 	logrus.SetFormatter(new(prefixed.TextFormatter))
 	logrus.SetLevel(logrus.DebugLevel)
 
-	s.client = New("https://10.221.78.60:5010/api/v1", "admin", "admin")
+	s.client = New("http://ambari-server:8080/api/v1", "admin", "admin")
 	s.client.DisableVerifySSL()
 
 	// Remove cluster

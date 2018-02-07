@@ -1,0 +1,22 @@
+version: '2.3'
+services:
+  postgres:
+    image: postgres:9.6
+    environment:
+      - POSTGRES_DB=ambari
+      - POSTGRES_PASSWORD=ambari
+      - POSTGRES_USER=ambari
+  ambari-server:
+    image: webcenter/ambari-server:latest
+    links:
+      - postgres:db
+    hostname: ambari
+    domainname: local.local
+  test:
+    image: golang:1.9
+    working_dir: /go/src/github.com/disaster37/go-ambari-rest
+    volumes:
+      - .:/go/src/github.com/disaster37/go-ambari-rest
+    command: "bash -c \"go get -t ./... && go test ./...\""
+    links:
+      - ambari-server:ambari-server

@@ -1,0 +1,133 @@
+{
+  "configurations" : [],
+  "host_groups" : [
+    {
+      "name" : "host_group_1",
+      "configurations" : [ ],
+      "components" : [
+        {
+          "name" : "PIG"
+        },
+        {
+          "name" : "HISTORYSERVER"
+        },
+        {
+          "name" : "KAFKA_BROKER"
+        },
+        {
+          "name" : "HBASE_REGIONSERVER"
+        },
+        {
+          "name" : "OOZIE_CLIENT"
+        },
+        {
+          "name" : "HBASE_CLIENT"
+        },
+        {
+          "name" : "NAMENODE"
+        },
+        {
+          "name" : "SUPERVISOR"
+        },
+        {
+          "name" : "FALCON_SERVER"
+        },
+        {
+          "name" : "SPARK_JOBHISTORYSERVER"
+        },
+        {
+          "name" : "METRICS_MONITOR"
+        },
+        {
+          "name" : "SPARK_CLIENT"
+        },
+        {
+          "name" : "SLIDER"
+        },
+        {
+          "name" : "AMBARI_SERVER"
+        },
+        {
+          "name" : "APP_TIMELINE_SERVER"
+        },
+        {
+          "name" : "HIVE_CLIENT"
+        },
+        {
+          "name" : "HDFS_CLIENT"
+        },
+        {
+          "name" : "NODEMANAGER"
+        },
+        {
+          "name" : "METRICS_COLLECTOR"
+        },
+        {
+          "name" : "FLUME_HANDLER"
+        },
+        {
+          "name" : "DATANODE"
+        },
+        {
+          "name" : "WEBHCAT_SERVER"
+        },
+        {
+          "name" : "RESOURCEMANAGER"
+        },
+        {
+          "name" : "ZOOKEEPER_SERVER"
+        },
+        {
+          "name" : "ZOOKEEPER_CLIENT"
+        },
+        {
+          "name" : "STORM_UI_SERVER"
+        },
+        {
+          "name" : "HBASE_MASTER"
+        },
+        {
+          "name" : "HIVE_SERVER"
+        },
+        {
+          "name" : "OOZIE_SERVER"
+        },
+        {
+          "name" : "FALCON_CLIENT"
+        },
+        {
+          "name" : "SECONDARY_NAMENODE"
+        },
+        {
+          "name" : "TEZ_CLIENT"
+        },
+        {
+          "name" : "HIVE_METASTORE"
+        },
+        {
+          "name" : "SQOOP"
+        },
+        {
+          "name" : "YARN_CLIENT"
+        },
+        {
+          "name" : "MAPREDUCE2_CLIENT"
+        },
+        {
+          "name" : "MYSQL_SERVER"
+        },
+        {
+          "name" : "DRPC_SERVER"
+        },
+        {
+          "name" : "NIMBUS"
+        }
+      ],
+      "cardinality" : "1"
+    }
+  ],
+  "Blueprints" : {
+    "stack_name" : "HDP",
+    "stack_version" : "2.6"
+  }
+}

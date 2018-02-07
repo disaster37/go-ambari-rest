@@ -36,7 +36,7 @@ func (s *ClientTestSuite) TestHost() {
 		assert.Equal(s.T(), "OFF", host.HostInfo.MaintenanceState)
 	}
 
-	// Update hostComponent
+	// Update host
 	host.HostInfo.MaintenanceState = "ON"
 	host, err = s.client.UpdateHost(host)
 	assert.NoError(s.T(), err)
@@ -48,7 +48,7 @@ func (s *ClientTestSuite) TestHost() {
 		assert.Equal(s.T(), "ON", host.HostInfo.MaintenanceState)
 	}
 
-	// Delete hostComponent
+	// Delete host
 	err = s.client.DeleteHost("test", "master1")
 	assert.NoError(s.T(), err)
 
