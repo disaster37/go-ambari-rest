@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 )
 
 // Test the constructor
@@ -49,5 +50,32 @@ func (s *ClientTestSuite) TestCluster() {
 	// Delete cluster
 	err = s.client.DeleteCluster("test3")
 	assert.NoError(s.T(), err)
+
+	// Create cluster with blueprint
+	// Create blueprint
+	b, err := ioutil.ReadFile("../fixtures/blueprint.json")
+	if err != nil {
+		panic(err)
+	}
+	blueprintJson := string(b)
+	_, err = s.client.CreateBlueprint("test", blueprintJson)
+	if err != nil {
+		panic(err)
+	}
+	//Create cluster from template
+	b, err = ioutil.ReadFile("../fixtures/cluster-template.json")
+	if err != nil {
+		panic(err)
+	}
+	templateJson := string(b)
+	cluster, err = s.client.CreateClusterFromTemplate("test2", templateJson)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), cluster)
+
+	// Delete the cluster
+	for _, service := range cluster.Services {
+		s.client.DeleteService("test2", service.ServiceInfo.ServiceName)
+	}
+	s.client.DeleteCluster("test2")
 
 }

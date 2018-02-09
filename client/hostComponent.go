@@ -3,14 +3,12 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 // Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/host-component-resources.md
 
 type HostComponent struct {
-	Response
 	HostComponentInfo *HostComponentInfo `json:"HostRoles"`
 }
 
@@ -43,7 +41,7 @@ func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostC
 	}
 	log.Debug("Response to create: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	// Force to install
@@ -106,7 +104,7 @@ func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostC
 	}
 	log.Debug("Response to update: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	// Get the HostComponent
@@ -115,7 +113,7 @@ func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostC
 		return nil, err
 	}
 	if hostComponent == nil {
-		return nil, errors.New("Can't get hostComponent that just updated")
+		return nil, NewAmbariError(500, "Can't get hostComponent that just updated")
 	}
 
 	log.Debug("HostComponent: ", hostComponent)
@@ -143,7 +141,7 @@ func (c *AmbariClient) DeleteHostComponent(clusterName string, hostname string, 
 	}
 	log.Debug("Response to delete hostComponent: ", resp)
 	if resp.StatusCode() >= 300 {
-		return errors.New(resp.Status())
+		return NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	return nil

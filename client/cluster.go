@@ -3,15 +3,14 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 // Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/cluster-resources.md
 
 type Cluster struct {
-	Response
-	Cluster *ClusterInfo `json:"Clusters"`
+	Cluster  *ClusterInfo `json:"Clusters"`
+	Services []Service    `json:"services,omitempty"`
 }
 
 type ClusterInfo struct {
@@ -43,7 +42,7 @@ func (c *AmbariClient) CreateCluster(cluster *Cluster) (*Cluster, error) {
 	}
 	log.Debug("Response to create: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	// Get the cluster
@@ -52,7 +51,7 @@ func (c *AmbariClient) CreateCluster(cluster *Cluster) (*Cluster, error) {
 		return nil, err
 	}
 	if cluster == nil {
-		return nil, errors.New("Can't get cluster that just created")
+		return nil, NewAmbariError(500, "Can't get cluster that just created")
 	}
 
 	return cluster, err
@@ -83,7 +82,7 @@ func (c *AmbariClient) CreateClusterFromTemplate(name string, jsonClusterTemplat
 	}
 	log.Debug("Response to create: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	// Get the cluster
@@ -92,7 +91,7 @@ func (c *AmbariClient) CreateClusterFromTemplate(name string, jsonClusterTemplat
 		return nil, err
 	}
 	if cluster == nil {
-		return nil, errors.New("Can't get cluster that just created")
+		return nil, NewAmbariError(500, "Can't get cluster that just created")
 	}
 
 	return cluster, err
@@ -153,7 +152,7 @@ func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*
 	}
 	log.Debug("Response to update: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	// Get the cluster
@@ -162,7 +161,7 @@ func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*
 		return nil, err
 	}
 	if cluster == nil {
-		return nil, errors.New("Can't get cluster that just updated")
+		return nil, NewAmbariError(500, "Can't get cluster that just updated")
 	}
 
 	log.Debug("Cluster: ", cluster)
@@ -184,7 +183,7 @@ func (c *AmbariClient) DeleteCluster(clusterName string) error {
 	}
 	log.Debug("Response to delete cluster: ", resp)
 	if resp.StatusCode() >= 300 {
-		return errors.New(resp.Status())
+		return NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	return nil

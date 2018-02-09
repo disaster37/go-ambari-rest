@@ -3,16 +3,14 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 // Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/repository-version-resources.md
 
 type Repository struct {
-	Response
-	RepositoryVersion RepositoryVersion `json:"RepositoryVersions"`
-	OS                []OS              `json:"operating_systems"`
+	RepositoryVersion *RepositoryVersion `json:"RepositoryVersions"`
+	OS                []OS               `json:"operating_systems"`
 }
 
 type RepositoryVersion struct {
@@ -24,12 +22,18 @@ type RepositoryVersion struct {
 }
 
 type OS struct {
-	OSInfo           OSInfo           `json:"OperatingSystems"`
-	RepositoriesInfo []RepositoryInfo `json:"repositories"`
+	Response
+	OSInfo           *OSInfo          `json:"OperatingSystems"`
+	RepositoriesData []RepositoryData `json:"repositories"`
 }
 
 type OSInfo struct {
 	Type string `json:"os_type"`
+}
+
+type RepositoryData struct {
+	Response
+	RepositoryInfo *RepositoryInfo `json:"Repositories"`
 }
 
 type RepositoryInfo struct {
@@ -48,6 +52,20 @@ func (r *Repository) String() string {
 	return string(json)
 }
 
+func (r *Repository) clean() {
+	// Remove href before send
+	for index, os := range r.OS {
+		os.Href = nil
+
+		for index2, repositoryData := range os.RepositoriesData {
+			repositoryData.Href = nil
+			os.RepositoriesData[index2] = repositoryData
+		}
+
+		r.OS[index] = os
+	}
+}
+
 func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, error) {
 
 	if repository == nil {
@@ -55,6 +73,8 @@ func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, er
 	}
 
 	log.Debug("Repository: %s", repository.String())
+
+	repository.clean()
 
 	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions", repository.RepositoryVersion.StackName, repository.RepositoryVersion.StackVersion)
 	jsonData, err := json.Marshal(repository)
@@ -67,7 +87,7 @@ func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, er
 	}
 	log.Debug("Response to create: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	repository, err = c.SearchRepository(repository.RepositoryVersion.StackName, repository.RepositoryVersion.StackVersion, repository.RepositoryVersion.Name, repository.RepositoryVersion.Version)
@@ -75,12 +95,12 @@ func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, er
 		return nil, err
 	}
 	if repository == nil {
-		return nil, errors.New("Can't get repository that just created")
+		return nil, NewAmbariError(500, "Can't get repository that just created")
 	}
 
 	log.Debug("Return repository: %s", repository)
 
-	return host, nil
+	return repository, nil
 
 }
 
@@ -103,12 +123,49 @@ func (c *AmbariClient) Repository(stackName string, stackVersion string, reposit
 	}
 	log.Debug("Response to get: ", resp)
 	repository := &Repository{}
-	err = json.Unmarshal(resp.Body(), host)
+	err = json.Unmarshal(resp.Body(), repository)
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Return repository: %s", host)
 
+	log.Debug("Repository : ", repository.String())
+
+	// Get Repositories for each OS
+	if repository != nil {
+		for index, os := range repository.OS {
+			log.Debug("Call ", os.Href)
+			resp, err = c.Client().R().Get(*os.Href)
+			if err != nil {
+				return nil, err
+			}
+			log.Debug("Response to get repository: ", resp)
+			os = OS{}
+			err = json.Unmarshal(resp.Body(), &os)
+			if err != nil {
+				return nil, err
+			}
+			log.Debug("Return repository: ", os)
+
+			for index2, repositoryData := range os.RepositoriesData {
+				log.Debug("Call ", repositoryData.Href)
+				resp, err = c.Client().R().Get(*repositoryData.Href)
+				if err != nil {
+					return nil, err
+				}
+				log.Debug("Response to get repositoryData: ", resp)
+				repositoryData = RepositoryData{}
+				err = json.Unmarshal(resp.Body(), &repositoryData)
+				if err != nil {
+					return nil, err
+				}
+				log.Debug("Return repositoryData: ", repositoryData)
+				os.RepositoriesData[index2] = repositoryData
+			}
+
+			repository.OS[index] = os
+		}
+	}
+	log.Debug("Return repository: %s", repository)
 	return repository, nil
 }
 
@@ -119,8 +176,10 @@ func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, er
 	}
 	log.Debug("Repository: ", repository)
 
+	repository.clean()
+
 	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions/%d", repository.RepositoryVersion.StackName, repository.RepositoryVersion.StackVersion, repository.RepositoryVersion.Id)
-	jsonData, err := json.Marshal(host)
+	jsonData, err := json.Marshal(repository)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +189,7 @@ func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, er
 	}
 	log.Debug("Response to update: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	// Get the Host
@@ -139,7 +198,7 @@ func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, er
 		return nil, err
 	}
 	if repository == nil {
-		return nil, errors.New("Can't get repository that just updated")
+		return nil, NewAmbariError(500, "Can't get repository that just updated")
 	}
 
 	log.Debug("Return repository: %s", repository.String())
@@ -164,7 +223,7 @@ func (c *AmbariClient) DeleteRepository(stackName string, stackVersion string, r
 	}
 	log.Debug("Response to delete host: ", resp)
 	if resp.StatusCode() >= 300 {
-		return errors.New(resp.Status())
+		return NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	return nil
@@ -205,7 +264,13 @@ func (c *AmbariClient) SearchRepository(stackName string, stackVersion string, r
 
 	if len(repositoryResponse.Items) > 0 {
 		log.Debug("Repository: ", repositoryResponse.Items[0])
-		return &repositoryResponse.Items[0], nil
+
+		repository, err := c.Repository(stackName, stackVersion, repositoryResponse.Items[0].RepositoryVersion.Id)
+		if err != nil {
+			return nil, err
+		}
+
+		return repository, nil
 	} else {
 		return nil, nil
 	}

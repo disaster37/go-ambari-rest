@@ -1,5 +1,6 @@
 package client
 
+// Need to manage service
 /*
 import (
 	"github.com/stretchr/testify/assert"

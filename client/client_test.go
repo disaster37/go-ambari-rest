@@ -22,6 +22,40 @@ func (s *ClientTestSuite) SetupSuite() {
 	// Remove cluster
 	s.client.DeleteCluster("test")
 
+	// Create repository to create cluster
+	repository := &Repository{
+		RepositoryVersion: &RepositoryVersion{
+			Version:      "2.6.4.0",
+			Name:         "HDP-2.6.4.0",
+			StackName:    "HDP",
+			StackVersion: "2.6",
+		},
+		OS: []OS{
+			OS{
+				OSInfo: &OSInfo{
+					Type: "redhat7",
+				},
+				RepositoriesData: []RepositoryData{
+					RepositoryData{
+						RepositoryInfo: &RepositoryInfo{
+							Id:      "HDP",
+							Name:    "HDP",
+							BaseUrl: "http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0",
+						},
+					},
+					RepositoryData{
+						RepositoryInfo: &RepositoryInfo{
+							Id:      "HDP-UTILS",
+							Name:    "HDP-UTILS",
+							BaseUrl: "http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.22/repos/centos7",
+						},
+					},
+				},
+			},
+		},
+	}
+	s.client.CreateRepository(repository)
+
 	// Create freash cluster
 	cluster := &Cluster{
 		Cluster: &ClusterInfo{

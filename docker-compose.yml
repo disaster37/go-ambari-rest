@@ -20,3 +20,15 @@ services:
     command: "bash -c \"go get -t ./... && go test ./...\""
     links:
       - ambari-server:ambari-server
+  curl:
+    image: appropriate/curl
+    links:
+      - ambari-server:ambari-server
+  cli:
+    image: debian
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    entrypoint: "/workspace/go-ambari-rest"
+    links:
+      - ambari-server:ambari-server

@@ -10,7 +10,7 @@ type AmbariClient struct {
 }
 
 type Response struct {
-	href string `json:"href,omitempty"`
+	Href *string `json:"href,omitempty"`
 }
 
 func New(baseUrl string, login string, password string) *AmbariClient {

@@ -3,14 +3,12 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 // Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/host-resources.md
 
 type Host struct {
-	Response
 	HostInfo *HostInfo `json:"Hosts"`
 }
 
@@ -46,7 +44,7 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 	}
 	log.Debug("Response to create: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	host, err = c.UpdateHost(host)
@@ -59,7 +57,7 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 		return nil, err
 	}
 	if host == nil {
-		return nil, errors.New("Can't get host that just created")
+		return nil, NewAmbariError(500, "Can't get host that just created")
 	}
 
 	log.Debug("Return host: %s", host)
@@ -114,7 +112,7 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 	}
 	log.Debug("Response to update: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	// Get the Host
@@ -123,7 +121,7 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 		return nil, err
 	}
 	if host == nil {
-		return nil, errors.New("Can't get host that just updated")
+		return nil, NewAmbariError(500, "Can't get host that just updated")
 	}
 
 	log.Debug("Return host: %s", host.String())
@@ -148,7 +146,7 @@ func (c *AmbariClient) DeleteHost(clusterName string, hostname string) error {
 	}
 	log.Debug("Response to delete host: ", resp)
 	if resp.StatusCode() >= 300 {
-		return errors.New(resp.Status())
+		return NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	return nil

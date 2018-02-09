@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +18,7 @@ type HostGroup struct {
 	Components     []map[string]string                       `json:"components"`
 	Configurations []map[string]map[string]map[string]string `json:"configurations"`
 	Name           string                                    `json:"name"`
-	Cardinality    int                                       `json:"cardinality"`
+	Cardinality    string                                    `json:"cardinality"`
 }
 
 type BlueprintInfo struct {
@@ -58,7 +57,7 @@ func (c *AmbariClient) CreateBlueprint(name string, jsonBlueprint string) (*Blue
 	}
 	log.Debug("Response to create: ", resp)
 	if resp.StatusCode() >= 300 {
-		return nil, errors.New(resp.Status())
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	blueprint, err := c.Blueprint(name)
@@ -66,7 +65,7 @@ func (c *AmbariClient) CreateBlueprint(name string, jsonBlueprint string) (*Blue
 		return nil, err
 	}
 	if blueprint == nil {
-		return nil, errors.New("Can't get blueprint that just created")
+		return nil, NewAmbariError(500, "Can't get blueprint that just created")
 	}
 
 	log.Debug("Return blueprint: %s", blueprint)
@@ -109,9 +108,9 @@ func (c *AmbariClient) DeleteBlueprint(name string) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("Response to delete host: ", resp)
+	log.Debug("Response to delete blueprint: ", resp)
 	if resp.StatusCode() >= 300 {
-		return errors.New(resp.Status())
+		return NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
 	return nil
