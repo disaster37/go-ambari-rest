@@ -105,12 +105,18 @@ func (c *AmbariClient) Cluster(clusterName string) (*Cluster, error) {
 	}
 	path := fmt.Sprintf("/clusters/%s", clusterName)
 
-	// Get the privilege
 	resp, err := c.Client().R().Get(path)
 	if err != nil {
 		return nil, err
 	}
 	log.Debug("Response to get: ", resp)
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
 	cluster := &Cluster{}
 	err = json.Unmarshal(resp.Body(), cluster)
 	if err != nil {

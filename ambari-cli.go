@@ -51,8 +51,8 @@ func main() {
 	}
 	app.Commands = []cli.Command{
 		{
-			Name:  "create-repository-if-not-exist",
-			Usage: "Create new repository if not exist",
+			Name:  "create-or-update-repository",
+			Usage: "Create or update repository",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "repository-file",
@@ -81,8 +81,8 @@ func main() {
 			Action: createCluster,
 		},
 		{
-			Name:  "create-privileges-if-not-exist",
-			Usage: "Create new privileges if not exist",
+			Name:  "create-or-update-privileges",
+			Usage: "Create or update privileges",
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:  "privileges-file",
@@ -116,8 +116,4 @@ func manageGlobalParameters() (*client.AmbariClient, error) {
 	client := client.New(ambariURL, ambariLogin, ambariPassword)
 
 	return client, nil
-}
-
-func createPrivileges() {
-
 }

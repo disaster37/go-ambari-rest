@@ -43,7 +43,13 @@ func (c *AmbariClient) Privilege(clusterName string, id int64) (*Privilege, erro
 		return nil, err
 	}
 	log.Debug("Result : ", resp)
-
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
 	privilege := &Privilege{}
 	err = json.Unmarshal(resp.Body(), privilege)
 	if err != nil {
@@ -177,6 +183,13 @@ func (c *AmbariClient) SearchPrivilege(clusterName string, permissionName string
 		return nil, err
 	}
 	log.Debug("Response to get: ", resp)
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
 	privilegeResponses := &PrivilegesResponse{}
 	err = json.Unmarshal(resp.Body(), privilegeResponses)
 	if err != nil {

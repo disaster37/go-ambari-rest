@@ -1,8 +1,8 @@
 {
     "stackName" : "HDP",
     "stackVersion" : "2.6",
-    "name" : "HDP-2.6.4.10",
-    "version": "2.6.4.10",
+    "name" : "HDP-2.6.4.0",
+    "version": "2.6.4.0",
     "operatingSystems": [
         {
             "osName" : "redhat7",

@@ -45,13 +45,19 @@ func createRepository(c *cli.Context) error {
 	repositoryStackJson := string(b)
 	log.Debug("Repository: ", repositoryStackJson)
 	repositoryStack := &RepositoryStack{}
-	err = json.Unmarshal(b, &repositoryStack)
+	err = json.Unmarshal(b, repositoryStack)
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	// Check if repository already exist
+	repository, err := clientAmbari.SearchRepository(repositoryStack.StackName, repositoryStack.StackVersion, repositoryStack.Name, repositoryStack.Version)
 	if err != nil {
 		return cli.NewExitError(err, 1)
 	}
 
 	// Create the target struct
-	repository := &client.Repository{
+	repositoryTarget := &client.Repository{
 		RepositoryVersion: &client.RepositoryVersion{
 			Version:      repositoryStack.Version,
 			Name:         repositoryStack.Name,
@@ -77,19 +83,28 @@ func createRepository(c *cli.Context) error {
 			}
 			os.RepositoriesData = append(os.RepositoriesData, repositoryData)
 		}
-		repository.OS = append(repository.OS, os)
+		repositoryTarget.OS = append(repositoryTarget.OS, os)
 	}
 
-	// Create the repository
-	_, err = clientAmbari.CreateRepository(repository)
-	if err != nil {
-		ambariError := err.(client.AmbariError)
-		if ambariError.Code != 409 {
-			return cli.NewExitError(ambariError.Message, 1)
+	// Create new repository
+	if repository == nil {
+		_, err = clientAmbari.CreateRepository(repositoryTarget)
+		if err != nil {
+			return cli.NewExitError(err, 1)
 		}
+
+		log.Info("Repository created successfully")
+	} else {
+		// Update Repository
+		repositoryTarget.RepositoryVersion.Id = repository.RepositoryVersion.Id
+		_, err = clientAmbari.UpdateRepository(repositoryTarget)
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		log.Info("Repository updated successfully")
 	}
 
-	log.Info("Repository created successfully")
 	return nil
 
 }

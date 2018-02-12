@@ -122,6 +122,13 @@ func (c *AmbariClient) Repository(stackName string, stackVersion string, reposit
 		return nil, err
 	}
 	log.Debug("Response to get: ", resp)
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
 	repository := &Repository{}
 	err = json.Unmarshal(resp.Body(), repository)
 	if err != nil {
@@ -255,6 +262,13 @@ func (c *AmbariClient) SearchRepository(stackName string, stackVersion string, r
 		return nil, err
 	}
 	log.Debug("Response to get: ", resp)
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
 	repositoryResponse := &RepositoriesResponse{}
 	err = json.Unmarshal(resp.Body(), repositoryResponse)
 	if err != nil {

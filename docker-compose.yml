@@ -10,8 +10,12 @@ services:
     image: webcenter/ambari-server:latest
     links:
       - postgres:db
-    hostname: ambari
-    domainname: local.local
+    hostname: ambari-server
+  ambari-agent:
+    image: webcenter/ambari-agent:latest
+    links:
+      - ambari-server:ambari-server
+    hostname: ambari-agent
   test:
     image: golang:1.9
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
@@ -20,6 +24,12 @@ services:
     command: "bash -c \"go get -t ./... && go test ./...\""
     links:
       - ambari-server:ambari-server
+  build:
+    image: golang:1.9
+    working_dir: /go/src/github.com/disaster37/go-ambari-rest
+    volumes:
+      - .:/go/src/github.com/disaster37/go-ambari-rest
+    command: "bash -c \"go get -d ./... && go get github.com/mitchellh/gox && gox -output 'release/ambari-cli_{{.OS}}_{{.Arch}}'\""
   curl:
     image: appropriate/curl
     links:
@@ -29,6 +39,6 @@ services:
     volumes:
       - .:/workspace
     working_dir: /workspace
-    entrypoint: "/workspace/go-ambari-rest"
+    entrypoint: "/workspace/release/ambari-cli_linux_amd64"
     links:
       - ambari-server:ambari-server

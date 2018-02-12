@@ -94,6 +94,13 @@ func (c *AmbariClient) Service(clusterName string, serviceName string) (*Service
 		return nil, err
 	}
 	log.Debug("Response to get: ", resp)
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
 	service := &Service{}
 	err = json.Unmarshal(resp.Body(), service)
 	if err != nil {

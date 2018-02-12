@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/disaster37/go-ambari-rest/client"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
@@ -37,25 +36,38 @@ func createCluster(c *cli.Context) error {
 	hostsTemplateJson := string(b)
 	log.Debug("HostsTemplateJson: ", hostsTemplateJson)
 
-	// Create the blueprint
-	_, err = clientAmbari.CreateBlueprint(c.String("cluster-name"), blueprintJson)
+	// Check if blueprint already exist
+	blueprint, err := clientAmbari.Blueprint(c.String("cluster-name"))
 	if err != nil {
-		ambariError := err.(client.AmbariError)
-		if ambariError.Code != 409 {
-			return cli.NewExitError(ambariError.Message, 1)
+		return cli.NewExitError(err, 1)
+	}
+	if blueprint == nil {
+		// Create the blueprint
+		_, err = clientAmbari.CreateBlueprint(c.String("cluster-name"), blueprintJson)
+		if err != nil {
+			return cli.NewExitError(err, 1)
 		}
+		log.Info("Create blueprint successfully")
+	} else {
+		log.Info("Blueprint already exist, skip.")
 	}
 
-	// Create the cluster
-	_, err = clientAmbari.CreateClusterFromTemplate(c.String("cluster-name"), hostsTemplateJson)
+	// Check if cluster already exist
+	cluster, err := clientAmbari.Cluster(c.String("cluster-name"))
 	if err != nil {
-		ambariError := err.(client.AmbariError)
-		if ambariError.Code != 409 {
-			return cli.NewExitError(ambariError.Message, 1)
+		return cli.NewExitError(err, 1)
+	}
+	if cluster == nil {
+		// Create the cluster
+		_, err = clientAmbari.CreateClusterFromTemplate(c.String("cluster-name"), hostsTemplateJson)
+		if err != nil {
+			return cli.NewExitError(err, 1)
 		}
+		log.Info("Cluster created successfully, look /var/log/ambari-server/ambari-server.log about potential topologie error")
+	} else {
+		log.Info("Cluster already exist, skip")
 	}
 
-	log.Info("Repository created successfully")
 	return nil
 
 }
