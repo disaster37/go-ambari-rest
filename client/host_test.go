@@ -1,7 +1,5 @@
 package client
 
-// Need to add ambari-agent on containers
-/*
 import (
 	"github.com/stretchr/testify/assert"
 )
@@ -13,7 +11,7 @@ func (s *ClientTestSuite) TestHost() {
 	host := &Host{
 		HostInfo: &HostInfo{
 			ClusterName: "test",
-			Hostname:    "master1",
+			Hostname:    "ambari-agent",
 			Rack:        "/B1",
 		},
 	}
@@ -22,18 +20,18 @@ func (s *ClientTestSuite) TestHost() {
 	assert.NotNil(s.T(), host)
 	if host != nil {
 		assert.Equal(s.T(), "test", host.HostInfo.ClusterName)
-		assert.Equal(s.T(), "master1", host.HostInfo.Hostname)
+		assert.Equal(s.T(), "ambari-agent", host.HostInfo.Hostname)
 		assert.Equal(s.T(), "/B1", host.HostInfo.Rack)
 		assert.Equal(s.T(), "OFF", host.HostInfo.MaintenanceState)
 	}
 
 	// Get host
-	host, err = s.client.Host("test", "master1")
+	host, err = s.client.Host("test", "ambari-agent")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), host)
 	if host != nil {
 		assert.Equal(s.T(), "test", host.HostInfo.ClusterName)
-		assert.Equal(s.T(), "master1", host.HostInfo.Hostname)
+		assert.Equal(s.T(), "ambari-agent", host.HostInfo.Hostname)
 		assert.Equal(s.T(), "/B1", host.HostInfo.Rack)
 		assert.Equal(s.T(), "OFF", host.HostInfo.MaintenanceState)
 	}
@@ -45,14 +43,13 @@ func (s *ClientTestSuite) TestHost() {
 	assert.NotNil(s.T(), host)
 	if host != nil {
 		assert.Equal(s.T(), "test", host.HostInfo.ClusterName)
-		assert.Equal(s.T(), "master1", host.HostInfo.Hostname)
+		assert.Equal(s.T(), "ambari-agent", host.HostInfo.Hostname)
 		assert.Equal(s.T(), "/B1", host.HostInfo.Rack)
 		assert.Equal(s.T(), "ON", host.HostInfo.MaintenanceState)
 	}
 
 	// Delete host
-	err = s.client.DeleteHost("test", "master1")
+	err = s.client.DeleteHost("test", "ambari-agent")
 	assert.NoError(s.T(), err)
 
 }
-*/
