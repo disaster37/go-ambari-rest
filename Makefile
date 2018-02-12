@@ -3,13 +3,13 @@ SUDO_DOCKER ?=
 all: help
 
 help:
-	@echo "make image - build Docker image"
-	@echo "make image-ci - build Docker image by CI tool"
-	@echo "make test - run tests"
-	@echo "make clean - stop and remove test container"
-	@echo "make push - push Docker image on registry"
-	@echo "make pull - pull Docker image on registry"
-	@echo "make init - create Shield account needed by stack"
+	@echo "make test - run tests (api and cli)"
+	@echo "make test-api - run api tests"
+	@echo "make test-cli - run cli tests"
+	@echo "make clean - stop and remove test containers"
+	@echo "make pull - pull Docker images on registry"
+	@echo "make init - lauch ambari infra for test purpose"
+	@echo "make build - compile program"
 
 init:
 	${SUDO_DOCKER} docker-compose up -d ambari-server
