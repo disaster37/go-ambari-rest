@@ -21,6 +21,7 @@ test-api: clean init
 
 test-cli: clean init
 	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-or-update-repository --repository-file /workspace/fixtures/repository.json
+	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-or-update-repository --use-spacewalk --repository-file /workspace/fixtures/repository.json
 	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-or-update-repository --repository-file /workspace/fixtures/repository.json
 	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-cluster-if-not-exist --cluster-name test --blueprint-file /workspace/fixtures/blueprint.json --hosts-template-file /workspace/fixtures/cluster-template.json
 	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-cluster-if-not-exist --cluster-name test --blueprint-file /workspace/fixtures/blueprint.json --hosts-template-file /workspace/fixtures/cluster-template.json

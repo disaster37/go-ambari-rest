@@ -58,6 +58,10 @@ func main() {
 					Name:  "repository-file",
 					Usage: "The full path of repository file",
 				},
+				cli.BoolFlag{
+					Name:  "use-spacewalk",
+					Usage: "Permit to use spacewalk. Default is false.",
+				},
 			},
 			Action: createRepository,
 		},
