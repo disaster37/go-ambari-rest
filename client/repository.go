@@ -28,7 +28,8 @@ type OS struct {
 }
 
 type OSInfo struct {
-	Type string `json:"os_type"`
+	Type              string `json:"os_type"`
+	ManagedRepository bool   `json:"ambari_managed_repositories, omitempty"`
 }
 
 type RepositoryData struct {

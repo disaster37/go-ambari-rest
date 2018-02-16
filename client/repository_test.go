@@ -18,7 +18,8 @@ func (s *ClientTestSuite) TestRepository() {
 		OS: []OS{
 			OS{
 				OSInfo: &OSInfo{
-					Type: "redhat7",
+					Type:              "redhat7",
+					ManagedRepository: true,
 				},
 				RepositoriesData: []RepositoryData{
 					RepositoryData{
@@ -49,6 +50,7 @@ func (s *ClientTestSuite) TestRepository() {
 		assert.Equal(s.T(), "HDP", repository.RepositoryVersion.StackName)
 		assert.Equal(s.T(), "2.6", repository.RepositoryVersion.StackVersion)
 		assert.Equal(s.T(), "redhat7", repository.OS[0].OSInfo.Type)
+		assert.Equal(s.T(), true, repository.OS[0].OSInfo.ManagedRepository)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Id)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Name)
 		assert.Equal(s.T(), "http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0", repository.OS[0].RepositoriesData[0].RepositoryInfo.BaseUrl)
@@ -68,6 +70,7 @@ func (s *ClientTestSuite) TestRepository() {
 		assert.Equal(s.T(), "HDP", repository.RepositoryVersion.StackName)
 		assert.Equal(s.T(), "2.6", repository.RepositoryVersion.StackVersion)
 		assert.Equal(s.T(), "redhat7", repository.OS[0].OSInfo.Type)
+		assert.Equal(s.T(), true, repository.OS[0].OSInfo.ManagedRepository)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Id)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Name)
 		assert.Equal(s.T(), "http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0", repository.OS[0].RepositoriesData[0].RepositoryInfo.BaseUrl)
@@ -87,6 +90,7 @@ func (s *ClientTestSuite) TestRepository() {
 		assert.Equal(s.T(), "HDP", repository.RepositoryVersion.StackName)
 		assert.Equal(s.T(), "2.6", repository.RepositoryVersion.StackVersion)
 		assert.Equal(s.T(), "redhat7", repository.OS[0].OSInfo.Type)
+		assert.Equal(s.T(), true, repository.OS[0].OSInfo.ManagedRepository)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Id)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Name)
 		assert.Equal(s.T(), "http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0", repository.OS[0].RepositoriesData[0].RepositoryInfo.BaseUrl)
@@ -106,12 +110,69 @@ func (s *ClientTestSuite) TestRepository() {
 		assert.Equal(s.T(), "HDP", repository.RepositoryVersion.StackName)
 		assert.Equal(s.T(), "2.6", repository.RepositoryVersion.StackVersion)
 		assert.Equal(s.T(), "redhat7", repository.OS[0].OSInfo.Type)
+		assert.Equal(s.T(), true, repository.OS[0].OSInfo.ManagedRepository)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Id)
 		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Name)
 		assert.Equal(s.T(), "http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0", repository.OS[0].RepositoriesData[0].RepositoryInfo.BaseUrl)
 		assert.Equal(s.T(), "HDP-UTILS", repository.OS[0].RepositoriesData[1].RepositoryInfo.Id)
 		assert.Equal(s.T(), "HDP-UTILS", repository.OS[0].RepositoriesData[1].RepositoryInfo.Name)
 		assert.Equal(s.T(), "http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.22/repos/centos7", repository.OS[0].RepositoriesData[1].RepositoryInfo.BaseUrl)
+	}
+
+	// Delete repository
+	err = s.client.DeleteRepository("HDP", "2.6", repository.RepositoryVersion.Id)
+	assert.NoError(s.T(), err)
+
+	// Create repository with spacewalk
+	repository = &Repository{
+		RepositoryVersion: &RepositoryVersion{
+			Version:      "2.6.4.0.2",
+			Name:         "HDP-2.6.4.0.2",
+			StackName:    "HDP",
+			StackVersion: "2.6",
+		},
+		OS: []OS{
+			OS{
+				OSInfo: &OSInfo{
+					Type:              "redhat7",
+					ManagedRepository: false,
+				},
+				RepositoriesData: []RepositoryData{
+					RepositoryData{
+						RepositoryInfo: &RepositoryInfo{
+							Id:      "HDP",
+							Name:    "HDP",
+							BaseUrl: "",
+						},
+					},
+					RepositoryData{
+						RepositoryInfo: &RepositoryInfo{
+							Id:      "HDP-UTILS",
+							Name:    "HDP-UTILS",
+							BaseUrl: "",
+						},
+					},
+				},
+			},
+		},
+	}
+	repository, err = s.client.CreateRepository(repository)
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), repository)
+	if repository != nil {
+		assert.NotEqual(s.T(), "", repository.RepositoryVersion.Id)
+		assert.Equal(s.T(), "2.6.4.0.2", repository.RepositoryVersion.Version)
+		assert.Equal(s.T(), "HDP-2.6.4.0.2", repository.RepositoryVersion.Name)
+		assert.Equal(s.T(), "HDP", repository.RepositoryVersion.StackName)
+		assert.Equal(s.T(), "2.6", repository.RepositoryVersion.StackVersion)
+		assert.Equal(s.T(), "redhat7", repository.OS[0].OSInfo.Type)
+		assert.Equal(s.T(), false, repository.OS[0].OSInfo.ManagedRepository)
+		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Id)
+		assert.Equal(s.T(), "HDP", repository.OS[0].RepositoriesData[0].RepositoryInfo.Name)
+		assert.Equal(s.T(), "", repository.OS[0].RepositoriesData[0].RepositoryInfo.BaseUrl)
+		assert.Equal(s.T(), "HDP-UTILS", repository.OS[0].RepositoriesData[1].RepositoryInfo.Id)
+		assert.Equal(s.T(), "HDP-UTILS", repository.OS[0].RepositoriesData[1].RepositoryInfo.Name)
+		assert.Equal(s.T(), "", repository.OS[0].RepositoriesData[1].RepositoryInfo.BaseUrl)
 	}
 
 	// Delete repository
