@@ -73,6 +73,11 @@ func createRepository(c *cli.Context) error {
 			},
 			RepositoriesData: make([]client.RepositoryData, 0, 2),
 		}
+		if c.Bool("use-spacewalk") == false {
+			os.OSInfo.ManagedRepository = true
+		} else {
+			os.OSInfo.ManagedRepository = false
+		}
 		for _, repositoryTemp := range osTemp.Repositories {
 			repositoryData := client.RepositoryData{
 				RepositoryInfo: &client.RepositoryInfo{
@@ -80,6 +85,9 @@ func createRepository(c *cli.Context) error {
 					Name:    repositoryTemp.RepositoryName,
 					BaseUrl: repositoryTemp.RepositoryBaseUrl,
 				},
+			}
+			if c.Bool("use-spacewalk") == true {
+				repositoryData.RepositoryInfo.BaseUrl = ""
 			}
 			os.RepositoriesData = append(os.RepositoriesData, repositoryData)
 		}
