@@ -114,6 +114,7 @@ func manageGlobalParameters() (*client.AmbariClient, error) {
 	}
 
 	client := client.New(ambariURL, ambariLogin, ambariPassword)
+	client.DisableVerifySSL()
 
 	return client, nil
 }
