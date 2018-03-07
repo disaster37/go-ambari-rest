@@ -1,10 +1,21 @@
 package main
 
 import (
+	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/urfave/cli.v1"
 	"io/ioutil"
+	"time"
 )
+
+type ClusterTemplate struct {
+	HostGroups []struct {
+		Name  string
+		Hosts []struct {
+			FQDN string
+		}
+	}
+}
 
 func createCluster(c *cli.Context) error {
 
@@ -58,6 +69,35 @@ func createCluster(c *cli.Context) error {
 		return cli.NewExitError(err, 1)
 	}
 	if cluster == nil {
+
+		// Before create cluster, we need wait all node join to macro substitution work fine
+		clusterTemplate := &ClusterTemplate{}
+		err = json.Unmarshal([]byte(hostsTemplateJson), clusterTemplate)
+		if err != nil {
+			return cli.NewExitError(err, 1)
+		}
+
+		log.Info("Wait all nodes join Ambari server to avoid hostgroup substitution ...")
+		loop := true
+		for loop == true {
+			loop = false
+			for _, hostGroup := range clusterTemplate.HostGroups {
+				for _, hostTemp := range hostGroup.Hosts {
+					// Check if host already here
+					host, err := clientAmbari.Host(hostTemp.FQDN)
+					if err != nil {
+						return cli.NewExitError(err, 1)
+					}
+					if host == nil {
+						// Wait host join
+						loop = true
+						time.Sleep(10 * time.Second)
+					}
+				}
+			}
+		}
+		log.Info("All nodes have join the Ambari server.")
+
 		// Create the cluster
 		_, err = clientAmbari.CreateClusterFromTemplate(c.String("cluster-name"), hostsTemplateJson)
 		if err != nil {

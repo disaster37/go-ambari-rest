@@ -51,3 +51,4 @@ services:
     entrypoint: "/workspace/release/ambari-cli_linux_amd64"
     links:
       - ambari-server:ambari-server
+      - ambari-agent:ambari-agent

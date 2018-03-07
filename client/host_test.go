@@ -25,8 +25,19 @@ func (s *ClientTestSuite) TestHost() {
 		assert.Equal(s.T(), "OFF", host.HostInfo.MaintenanceState)
 	}
 
+	// Get host on cluster
+	host, err = s.client.HostOnCluster("test", "ambari-agent")
+	assert.NoError(s.T(), err)
+	assert.NotNil(s.T(), host)
+	if host != nil {
+		assert.Equal(s.T(), "test", host.HostInfo.ClusterName)
+		assert.Equal(s.T(), "ambari-agent", host.HostInfo.Hostname)
+		assert.Equal(s.T(), "/B1", host.HostInfo.Rack)
+		assert.Equal(s.T(), "OFF", host.HostInfo.MaintenanceState)
+	}
+
 	// Get host
-	host, err = s.client.Host("test", "ambari-agent")
+	host, err = s.client.Host("ambari-agent")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), host)
 	if host != nil {

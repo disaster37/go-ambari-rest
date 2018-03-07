@@ -52,7 +52,7 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 		return nil, err
 	}
 
-	host, err = c.Host(host.HostInfo.ClusterName, host.HostInfo.Hostname)
+	host, err = c.HostOnCluster(host.HostInfo.ClusterName, host.HostInfo.Hostname)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,7 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 
 }
 
-// Get cluster by ID is not supported by ambari api
-func (c *AmbariClient) Host(clusterName string, hostname string) (*Host, error) {
+func (c *AmbariClient) HostOnCluster(clusterName string, hostname string) (*Host, error) {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
@@ -77,6 +76,37 @@ func (c *AmbariClient) Host(clusterName string, hostname string) (*Host, error) 
 	}
 
 	path := fmt.Sprintf("/clusters/%s/hosts/%s", clusterName, hostname)
+
+	// Get the host components
+	resp, err := c.Client().R().Get(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Response to get: ", resp)
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
+	host := &Host{}
+	err = json.Unmarshal(resp.Body(), host)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Return host: %s", host)
+
+	return host, nil
+}
+
+func (c *AmbariClient) Host(hostname string) (*Host, error) {
+
+	if hostname == "" {
+		panic("HostName can't be empty")
+	}
+
+	path := fmt.Sprintf("/hosts/%s", hostname)
 
 	// Get the host components
 	resp, err := c.Client().R().Get(path)
@@ -123,7 +153,7 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 	}
 
 	// Get the Host
-	host, err = c.Host(host.HostInfo.ClusterName, host.HostInfo.Hostname)
+	host, err = c.HostOnCluster(host.HostInfo.ClusterName, host.HostInfo.Hostname)
 	if err != nil {
 		return nil, err
 	}
