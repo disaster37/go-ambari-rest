@@ -129,6 +129,45 @@ func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostC
 
 }
 
+func (c *AmbariClient) StopHostComponent(hostComponent *HostComponent) (*HostComponent, error) {
+
+	if hostComponent == nil {
+		panic("HostComponent can't be nil")
+	}
+	log.Debug("HostComponent: ", hostComponent)
+
+	// Check if components is already stopped
+	if hostComponent.HostComponentInfo.DesiredState == "INSTALLED" {
+		log.Debugf("Component %s on host %s is already stopped")
+		return hostComponent, nil
+	}
+
+	// Update the host components
+	hostComponent.HostComponentInfo.State = "INSTALLED"
+	hostComponent, err := c.UpdateHostComponent(hostComponent)
+	return hostComponent, err
+
+}
+
+func (c *AmbariClient) StartHostComponent(hostComponent *HostComponent) (*HostComponent, error) {
+
+	if hostComponent == nil {
+		panic("HostComponent can't be nil")
+	}
+	log.Debug("HostComponent: ", hostComponent)
+
+	// Check if components is already started
+	if hostComponent.HostComponentInfo.DesiredState == "STARTED" {
+		log.Debugf("Component %s on host %s is already started")
+		return hostComponent, nil
+	}
+
+	// Update the host components
+	hostComponent.HostComponentInfo.State = "STARTED"
+	hostComponent, err := c.UpdateHostComponent(hostComponent)
+	return hostComponent, err
+}
+
 func (c *AmbariClient) DeleteHostComponent(clusterName string, hostname string, componentName string) error {
 
 	if clusterName == "" {
@@ -140,6 +179,21 @@ func (c *AmbariClient) DeleteHostComponent(clusterName string, hostname string, 
 	if componentName == "" {
 		panic("ComponentName can't be empty")
 	}
+
+	// Get the component and stop it
+	hostComponent, err := c.HostComponent(clusterName, hostname, componentName)
+	if err != nil {
+		return err
+	}
+	if hostComponent == nil {
+		return NewAmbariError(404, "HostComponent %s not found in host %s", componentName, hostname)
+	}
+	_, err = c.StopHostComponent(hostComponent)
+	if err != nil {
+		return err
+	}
+
+	// Then delete host components
 	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", clusterName, hostname, componentName)
 
 	resp, err := c.Client().R().Delete(path)

@@ -21,6 +21,7 @@ func (s *ClientTestSuite) SetupSuite() {
 
 	// Remove cluster
 	s.client.DeleteCluster("test")
+	s.client.DeleteBlueprint("test")
 
 	// Create repository to create cluster
 	repository := &Repository{

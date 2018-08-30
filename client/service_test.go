@@ -57,7 +57,7 @@ func (s *ClientTestSuite) TestService() {
 	assert.NotNil(s.T(), service)
 
 	// Delete service
-	err = s.client.DeleteService("test", "ZOOKEEPER")
-	assert.NoError(s.T(), err)
+	//err = s.client.DeleteService("test", "ZOOKEEPER")
+	//assert.NoError(s.T(), err)
 
 }

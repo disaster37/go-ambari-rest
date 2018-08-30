@@ -23,7 +23,7 @@ func (s *ClientTestSuite) TestBlueprint() {
 		assert.Equal(s.T(), "HDP", blueprint.BlueprintInfo.Stack)
 		assert.Equal(s.T(), "2.6", blueprint.BlueprintInfo.Version)
 		assert.Equal(s.T(), 0, len(blueprint.Configurations))
-		assert.Equal(s.T(), 1, len(blueprint.HostGroups))
+		assert.Equal(s.T(), 2, len(blueprint.HostGroups))
 	}
 
 	// Get blueprint
@@ -37,6 +37,8 @@ func (s *ClientTestSuite) TestBlueprint() {
 		//		assert.NotEqual(s.T(), 0, len(blueprint.Configurations))
 		//		assert.Equal(s.T(), 1, len(blueprint.HostGroups))
 	}
+
+	assert.NoError(s.T(), err)
 
 	// Delete blueprint
 	err = s.client.DeleteBlueprint("test")

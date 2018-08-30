@@ -1,5 +1,9 @@
 package client
 
+import (
+	"fmt"
+)
+
 type AmbariError struct {
 	Code    int
 	Message string
@@ -9,9 +13,9 @@ func (e AmbariError) Error() string {
 	return e.Message
 }
 
-func NewAmbariError(code int, message string) AmbariError {
+func NewAmbariError(code int, message string, params ...interface{}) AmbariError {
 	return AmbariError{
 		Code:    code,
-		Message: message,
+		Message: fmt.Sprintf(message, params...),
 	}
 }

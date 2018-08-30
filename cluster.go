@@ -10,11 +10,13 @@ import (
 
 type ClusterTemplate struct {
 	HostGroups []struct {
-		Name  string
-		Hosts []struct {
-			FQDN string
-		}
-	}
+		Name  string `json:"name"`
+		Hosts []Host `json:"hosts"`
+	} `json:"host_groups"`
+}
+
+type Host struct {
+	FQDN string `json:"fqdn"`
 }
 
 func createCluster(c *cli.Context) error {
@@ -77,11 +79,17 @@ func createCluster(c *cli.Context) error {
 			return cli.NewExitError(err, 1)
 		}
 
-		log.Info("Wait all nodes join Ambari server to avoid hostgroup substitution ...")
+		nbNodes := 0
+		for _, hostGroup := range clusterTemplate.HostGroups {
+			nbNodes = nbNodes + len(hostGroup.Hosts)
+		}
+
+		log.Infof("Wait all nodes (%d) join Ambari server to avoid hostgroup substitution ...", nbNodes)
 		loop := true
 		for loop == true {
 			loop = false
-			for _, hostGroup := range clusterTemplate.HostGroups {
+			for idx, hostGroup := range clusterTemplate.HostGroups {
+				tempHosts := make([]Host, 0, len(hostGroup.Hosts))
 				for _, hostTemp := range hostGroup.Hosts {
 					// Check if host already here
 					host, err := clientAmbari.Host(hostTemp.FQDN)
@@ -91,9 +99,14 @@ func createCluster(c *cli.Context) error {
 					if host == nil {
 						// Wait host join
 						loop = true
+						tempHosts = append(tempHosts, hostTemp)
+						log.Infof("Host %s not yet join the cluster, continuous to wait...", hostTemp.FQDN)
 						time.Sleep(10 * time.Second)
+					} else {
+						log.Infof("Host %s already join the cluster", hostTemp.FQDN)
 					}
 				}
+				clusterTemplate.HostGroups[idx].Hosts = tempHosts
 			}
 		}
 		log.Info("All nodes have join the Ambari server.")

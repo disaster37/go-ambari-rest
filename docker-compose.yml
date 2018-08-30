@@ -19,6 +19,14 @@ services:
     environment:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}
+  ambari-agent-fake:
+    image: webcenter/ambari-agent:latest
+    links:
+      - ambari-server:ambari-server
+    hostname: ambari-agent2
+    environment:
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
   test:
     image: golang:1.9
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
@@ -35,7 +43,7 @@ services:
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
     volumes:
       - .:/go/src/github.com/disaster37/go-ambari-rest
-    command: "bash -c \"go get -d ./... && go get github.com/mitchellh/gox && gox -output 'release/ambari-cli_{{.OS}}_{{.Arch}}'\""
+    command: "bash -c \"go get -d ./... && go get github.com/mitchellh/gox && gox -osarch='linux/amd64' -output 'release/ambari-cli_{{.OS}}_{{.Arch}}'\""
     environment:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}

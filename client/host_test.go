@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
 )
 
 // Test the constructor
@@ -60,7 +61,21 @@ func (s *ClientTestSuite) TestHost() {
 	}
 
 	// Delete host
+	host.HostInfo.MaintenanceState = "OFF"
+	s.client.UpdateHost(host)
 	err = s.client.DeleteHost("test", "ambari-agent")
 	assert.NoError(s.T(), err)
+
+	//Create cluster from template
+	b, err := ioutil.ReadFile("../fixtures/cluster-template.json")
+	if err != nil {
+		panic(err)
+	}
+	templateJson := string(b)
+
+	s.client.CreateClusterFromTemplate("testHost", templateJson)
+	err = s.client.RegisterHostOnCluster("testHost", "ambari-agent2", "test", "host_group_1")
+	assert.NoError(s.T(), err)
+	s.client.DeleteCluster("test2Host")
 
 }

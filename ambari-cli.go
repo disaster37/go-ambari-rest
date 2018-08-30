@@ -95,6 +95,33 @@ func main() {
 			},
 			Action: createPrivileges,
 		},
+		{
+			Name:  "add-host-in-cluster",
+			Usage: "Add new host in existing cluster",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name to add host",
+				},
+				cli.StringFlag{
+					Name:  "blueprint-name",
+					Usage: "The blueprint name to use to affect host role in cluster",
+				},
+				cli.StringFlag{
+					Name:  "hostname",
+					Usage: "The hostname to add on cluster",
+				},
+				cli.StringFlag{
+					Name:  "role",
+					Usage: "The role of the host in cluster",
+				},
+				cli.StringFlag{
+					Name:  "--rack",
+					Usage: "The rack name",
+				},
+			},
+			Action: addHostInCluster,
+		},
 	}
 
 	app.Run(os.Args)
