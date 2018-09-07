@@ -9,8 +9,9 @@ import (
 // Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/cluster-resources.md
 
 type Cluster struct {
-	Cluster  *ClusterInfo `json:"Clusters"`
-	Services []Service    `json:"services,omitempty"`
+	Cluster        *ClusterInfo             `json:"Clusters"`
+	Services       []Service                `json:"services,omitempty"`
+	DesiredConfigs map[string]Configuration `json:"desired_config,omitempty"`
 }
 
 type ClusterInfo struct {
@@ -180,6 +181,35 @@ func (c *AmbariClient) DeleteCluster(clusterName string) error {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
+	}
+
+	// Check if cluster exist
+	cluster, err := c.Cluster(clusterName)
+	if err != nil {
+		return err
+	}
+	if cluster == nil {
+		return nil
+	}
+
+	// Remove all services
+	for _, service := range cluster.Services {
+		err = c.DeleteService(service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
+		if err != nil {
+			return nil
+		}
+	}
+
+	// Remove all hosts
+	hosts, err := c.HostsOnCluster(clusterName)
+	if err != nil {
+		return err
+	}
+	for _, host := range hosts {
+		err := c.DeleteHost(clusterName, host.HostInfo.Hostname)
+		if err != nil {
+			return nil
+		}
 	}
 
 	path := fmt.Sprintf("/clusters/%s", clusterName)

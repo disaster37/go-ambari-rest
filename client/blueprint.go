@@ -109,8 +109,18 @@ func (c *AmbariClient) DeleteBlueprint(name string) error {
 	if name == "" {
 		panic("Name can't be empty")
 	}
-	path := fmt.Sprintf("/blueprints/%s", name)
 
+	// Check if blueprint exist
+	blueprint, err := c.Blueprint(name)
+	if err != nil {
+		return err
+	}
+	if blueprint == nil {
+		log.Debugf("Blueprint %s not found", name)
+		return nil
+	}
+
+	path := fmt.Sprintf("/blueprints/%s", name)
 	resp, err := c.Client().R().Delete(path)
 	if err != nil {
 		return err

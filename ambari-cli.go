@@ -122,6 +122,124 @@ func main() {
 			},
 			Action: addHostInCluster,
 		},
+		{
+			Name:  "stop-service",
+			Usage: "Stop service and wait service is stopped",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to stop the service",
+				},
+				cli.StringFlag{
+					Name:  "service-name",
+					Usage: "The service name to stop",
+				},
+				cli.BoolFlag{
+					Name:  "enable-maintenance",
+					Usage: "Put service in maintenance mode before stop the service",
+				},
+				cli.BoolFlag{
+					Name:  "force",
+					Usage: "Remove maintenance state in service before stop them",
+				},
+			},
+			Action: stopServiceInCluster,
+		},
+		{
+			Name:  "start-service",
+			Usage: "Start service and wait service is started",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to stop the service",
+				},
+				cli.StringFlag{
+					Name:  "service-name",
+					Usage: "The service name to stop",
+				},
+				cli.BoolFlag{
+					Name:  "disable-maintenance",
+					Usage: "Put service in maintenance mode OFF after start the service",
+				},
+			},
+			Action: startServiceInCluster,
+		},
+		{
+			Name:  "stop-all-services",
+			Usage: "Stop all services and wait all services are stopped",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to stop all services",
+				},
+				cli.BoolFlag{
+					Name:  "enable-maintenance",
+					Usage: "Put all services in maintenance state after stop all services",
+				},
+				cli.BoolFlag{
+					Name:  "force",
+					Usage: "Remove maintenance state in all services before stop them",
+				},
+			},
+			Action: stopAllServicesInCluster,
+		},
+		{
+			Name:  "start-all-services",
+			Usage: "Start all services and wait all services are started",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to stop all services",
+				},
+				cli.BoolFlag{
+					Name:  "disable-maintenance",
+					Usage: "Remove all mainetnance state in all services before start them",
+				},
+			},
+			Action: startAllServicesInCluster,
+		},
+		{
+			Name:  "stop-all-components-in-host",
+			Usage: "Stop all components in host and wait all components are stopped",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to stop all components",
+				},
+				cli.StringFlag{
+					Name:  "hostname",
+					Usage: "The hostname where to stop all components",
+				},
+				cli.BoolFlag{
+					Name:  "enable-maintenance",
+					Usage: "Enable maintenance state in host after stop components",
+				},
+				cli.BoolFlag{
+					Name:  "force",
+					Usage: "Disable maintenance state in host before stop components",
+				},
+			},
+			Action: stopAllComponentsInHost,
+		},
+		{
+			Name:  "start-all-components-in-host",
+			Usage: "Start all components in host and wait all components are started",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to start all components",
+				},
+				cli.StringFlag{
+					Name:  "hostname",
+					Usage: "The hostname where to start all components",
+				},
+				cli.BoolFlag{
+					Name:  "disable-maintenance",
+					Usage: "Disable maintenance state in host before start components",
+				},
+			},
+			Action: startAllComponentsInHost,
+		},
 	}
 
 	app.Run(os.Args)

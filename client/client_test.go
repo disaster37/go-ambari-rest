@@ -14,19 +14,25 @@ type ClientTestSuite struct {
 
 func (s *ClientTestSuite) SetupSuite() {
 	logrus.SetFormatter(new(prefixed.TextFormatter))
-	logrus.SetLevel(logrus.DebugLevel)
+	logrus.SetLevel(logrus.InfoLevel)
 
 	s.client = New("http://ambari-server:8080/api/v1", "admin", "admin")
 	s.client.DisableVerifySSL()
 
 	// Remove cluster
-	s.client.DeleteCluster("test")
-	s.client.DeleteBlueprint("test")
+	err := s.client.DeleteCluster("test")
+	if err != nil {
+		panic(err)
+	}
+	err = s.client.DeleteBlueprint("test")
+	if err != nil {
+		panic(err)
+	}
 
 	// Create repository to create cluster
 	repository := &Repository{
 		RepositoryVersion: &RepositoryVersion{
-			Version:      "2.6.4.0",
+			Version:      "2.6.4.0-91",
 			Name:         "HDP-2.6.4.0",
 			StackName:    "HDP",
 			StackVersion: "2.6",
@@ -34,19 +40,20 @@ func (s *ClientTestSuite) SetupSuite() {
 		OS: []OS{
 			OS{
 				OSInfo: &OSInfo{
-					Type: "redhat7",
+					Type:              "redhat7",
+					ManagedRepository: true,
 				},
 				RepositoriesData: []RepositoryData{
 					RepositoryData{
 						RepositoryInfo: &RepositoryInfo{
-							Id:      "HDP",
+							Id:      "HDP-2.6.4.0",
 							Name:    "HDP",
 							BaseUrl: "http://public-repo-1.hortonworks.com/HDP/centos7/2.x/updates/2.6.4.0",
 						},
 					},
 					RepositoryData{
 						RepositoryInfo: &RepositoryInfo{
-							Id:      "HDP-UTILS",
+							Id:      "HDP-UTILS-1.1.0.22",
 							Name:    "HDP-UTILS",
 							BaseUrl: "http://public-repo-1.hortonworks.com/HDP-UTILS-1.1.0.22/repos/centos7",
 						},
@@ -55,7 +62,10 @@ func (s *ClientTestSuite) SetupSuite() {
 			},
 		},
 	}
-	s.client.CreateRepository(repository)
+	_, err = s.client.CreateRepository(repository)
+	if err != nil {
+		panic(err)
+	}
 
 	// Create freash cluster
 	cluster := &Cluster{
@@ -64,7 +74,21 @@ func (s *ClientTestSuite) SetupSuite() {
 			ClusterName: "test",
 		},
 	}
-	cluster, err := s.client.CreateCluster(cluster)
+	_, err = s.client.CreateCluster(cluster)
+	if err != nil {
+		panic(err)
+	}
+
+	// Add minimal config for cluster
+	config := &Configuration{
+		Tag:  "INITIAL",
+		Type: "cluster-env",
+		Properties: map[string]string{
+			"cluster_name": "test",
+			"stack_id":     "HDP-2.6",
+		},
+	}
+	_, err = s.client.CreateConfigurationOnCluster("test", config)
 	if err != nil {
 		panic(err)
 	}

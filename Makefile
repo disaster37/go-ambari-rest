@@ -14,8 +14,9 @@ help:
 init:
 	${SUDO_DOCKER} docker-compose up -d ambari-server
 	${SUDO_DOCKER} docker-compose up -d ambari-agent
-	${SUDO_DOCKER} docker-compose up -d ambari-agent-fake
-	until $$(docker-compose run --rm curl --output /dev/null --silent --head --fail http://ambari-server:8080/api/v1); do sleep 5; done
+	${SUDO_DOCKER} docker-compose up -d ambari-agent2
+	${SUDO_DOCKER} docker-compose up -d ambari-agent3
+	until $$(docker-compose run --rm curl --output /dev/null --silent --head --fail http://ambari-server:8080); do sleep 5; done
 
 test-api: clean init
 	${SUDO_DOCKER} docker-compose run --rm test

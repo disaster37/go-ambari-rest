@@ -19,11 +19,19 @@ services:
     environment:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}
-  ambari-agent-fake:
+  ambari-agent2:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
     hostname: ambari-agent2
+    environment:
+      - http_proxy=${http_proxy}
+      - https_proxy=${https_proxy}
+  ambari-agent3:
+    image: webcenter/ambari-agent:latest
+    links:
+      - ambari-server:ambari-server
+    hostname: ambari-agent3
     environment:
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}

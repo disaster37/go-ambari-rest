@@ -73,9 +73,7 @@ func (s *ClientTestSuite) TestCluster() {
 	assert.NotNil(s.T(), cluster)
 
 	// Delete the cluster
-	for _, service := range cluster.Services {
-		s.client.DeleteService("test2", service.ServiceInfo.ServiceName)
-	}
-	s.client.DeleteCluster("test2")
+	err = s.client.DeleteCluster("test2")
+	assert.NoError(s.T(), err)
 
 }

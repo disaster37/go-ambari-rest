@@ -13,6 +13,16 @@
         }
       ],
       "cardinality" : "0"
+    },
+    {
+      "name" : "host_group_2",
+      "configurations" : [ ],
+      "components" : [
+        {
+          "name" : "ZOOKEEPER_CLIENT"
+        }
+      ],
+      "cardinality" : "0"
     }
   ],
   "Blueprints" : {

@@ -53,3 +53,69 @@ func addHostInCluster(c *cli.Context) error {
 
 	return nil
 }
+
+func stopAllComponentsInHost(c *cli.Context) error {
+
+	clientAmbari, err := manageGlobalParameters()
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if c.String("cluster-name") == "" {
+		return cli.NewExitError("You must set cluster-name parameter", 1)
+	}
+	if c.String("hostname") == "" {
+		return cli.NewExitError("You must set hostname parameter", 1)
+	}
+
+	// Get the host
+	host, err := clientAmbari.HostOnCluster(c.String("cluster-name"), c.String("hostname"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if host == nil {
+		return cli.NewExitError(client.NewAmbariError(404, "Host %s not found", c.String("hostname")), 1)
+	}
+
+	// Stop all components
+	err = clientAmbari.StopAllComponentsInHost(c.String("cluster-name"), c.String("hostname"), c.Bool("enable-maintenance"), c.Bool("force"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	log.Infof("Successfully stop all components in host %s with enable maintenance mode to %t", c.String("hostname"), c.Bool("enable-maintenance"))
+
+	return nil
+}
+
+func startAllComponentsInHost(c *cli.Context) error {
+
+	clientAmbari, err := manageGlobalParameters()
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if c.String("cluster-name") == "" {
+		return cli.NewExitError("You must set cluster-name parameter", 1)
+	}
+	if c.String("hostname") == "" {
+		return cli.NewExitError("You must set hostname parameter", 1)
+	}
+
+	// Get the host
+	host, err := clientAmbari.HostOnCluster(c.String("cluster-name"), c.String("hostname"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if host == nil {
+		return cli.NewExitError(client.NewAmbariError(404, "Host %s not found", c.String("hostname")), 1)
+	}
+
+	// Start all components
+	err = clientAmbari.StartAllComponentsInHost(c.String("cluster-name"), c.String("hostname"), c.Bool("disable-maintenance"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	log.Infof("Successfully start all components in host %s with disable maintenance mode to %t", c.String("hostname"), c.Bool("enable-maintenance"))
+
+	return nil
+}
