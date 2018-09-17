@@ -26,7 +26,7 @@ func addHostInCluster(c *cli.Context) error {
 	}
 
 	// Register host in cluster
-	err = clientAmbari.RegisterHostOnCluster(c.String("cluster-name"), c.String("hostname"), c.String("blueprint-name"), c.String("role"))
+	_, err = clientAmbari.RegisterHostOnCluster(c.String("cluster-name"), c.String("hostname"), c.String("blueprint-name"), c.String("role"))
 	if err != nil {
 		return cli.NewExitError(err, 1)
 	}

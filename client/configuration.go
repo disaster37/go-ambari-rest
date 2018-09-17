@@ -1,3 +1,6 @@
+// This file permit to manage configuratiopn from Ambari API
+// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/configuration.md
+
 package client
 
 import (
@@ -6,20 +9,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Object item
 type Configuration struct {
 	Type       string            `json:"type,omitempty"`
 	Tag        string            `json:"tag,omitempty"`
 	Properties map[string]string `json:"properties,omitempty"`
 }
-
 type DesiredConfig struct {
 	DesiredConfig *Configuration `json:"desired_config,omitempty"`
 }
-
 type RequestAddConfig struct {
 	Cluster *DesiredConfig `json:"Clusters,omitempty"`
 }
 
+// String permit to return Configuration as Json string
+func (c *Configuration) String() string {
+	json, _ := json.Marshal(c)
+	return string(json)
+}
+
+// CreateConfigurationOnCluster permit to add new service confoguration on cluster
+// It return cluster object if all right fine
+// It return error if something wrong
 func (c *AmbariClient) CreateConfigurationOnCluster(clusterName string, configuration *Configuration) (*Cluster, error) {
 	if clusterName == "" {
 		panic("ClusterName can't be empty")

@@ -1,3 +1,6 @@
+//This file permit to manage service in Ambari API
+// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/services-service.md
+
 package client
 
 import (
@@ -6,8 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"time"
 )
-
-// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/services-service.md
 
 const (
 	SERVICE_STARTED       = "STARTED"
@@ -19,11 +20,11 @@ const (
 	MAINTENANCE_STATE_OFF = "OFF"
 )
 
+// Service object
 type Service struct {
 	ServiceInfo       *ServiceInfo       `json:"ServiceInfo"`
 	ServiceComponents []ServiceComponent `json:"components,omitempty"`
 }
-
 type ServiceInfo struct {
 	ClusterName      string `json:"cluster_name,omitempty"`
 	ServiceName      string `json:"service_name,omitempty"`
@@ -32,11 +33,10 @@ type ServiceInfo struct {
 	DesiredState     string `json:"desired_state,omitempty"`
 	MaintenanceState string `json:"maintenance_state,omitempty"`
 }
-
 type ServiceComponent struct {
 	ServiceComponentInfo *ServiceComponentInfo `json:"ServiceComponentInfo"`
+	HostComponentInfo    []HostComponentInfo   `json:"host_components"`
 }
-
 type ServiceComponentInfo struct {
 	ClusterName   string `json:"cluster_name,omitempty"`
 	ServiceName   string `json:"service_name,omitempty"`
@@ -45,33 +45,28 @@ type ServiceComponentInfo struct {
 	Category      string `json:"category,omitempty"`
 }
 
+// String permit to get service object as Json string
 func (s *Service) String() string {
 	json, _ := json.Marshal(s)
 	return string(json)
 }
 
+// ClearBeforeSave permit to clean service before save or update it
 func (s *Service) CleanBeforeSave() {
 	s.ServiceComponents = nil
 	s.ServiceInfo.DesiredState = ""
 }
 
+// CreateService permit to create new service
+// The service is created in INIT state
+// It return the service if all work fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) CreateService(service *Service) (*Service, error) {
 
 	if service == nil {
 		panic("Service can't be nil")
 	}
-
 	log.Debug("Service: %s", service.String())
-
-	// Check if service already exist
-	serviceTemp, err := c.Service(service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
-	if err != nil {
-		return nil, err
-	}
-	if serviceTemp != nil && (serviceTemp.ServiceInfo.State == SERVICE_INSTALLED || serviceTemp.ServiceInfo.State == SERVICE_STARTED || serviceTemp.ServiceInfo.State == SERVICE_STOPPED) {
-		log.Debugf("Service %s is already installed")
-		return serviceTemp, nil
-	}
 
 	service.CleanBeforeSave()
 	service.ServiceInfo.State = SERVICE_INIT
@@ -101,6 +96,10 @@ func (c *AmbariClient) CreateService(service *Service) (*Service, error) {
 
 }
 
+// Service permit to get service by is name
+// It return Service if is found
+// It return nil is service is not found
+// It return error if something wrong with the API call
 func (c *AmbariClient) Service(clusterName string, serviceName string) (*Service, error) {
 
 	if clusterName == "" {
@@ -109,6 +108,8 @@ func (c *AmbariClient) Service(clusterName string, serviceName string) (*Service
 	if serviceName == "" {
 		panic("ServiceName can't be empty")
 	}
+	log.Debug("ClusterName", clusterName)
+	log.Debug("ServiceName", serviceName)
 
 	path := fmt.Sprintf("/clusters/%s/services/%s", clusterName, serviceName)
 	resp, err := c.Client().R().Get(path)
@@ -133,6 +134,9 @@ func (c *AmbariClient) Service(clusterName string, serviceName string) (*Service
 	return service, nil
 }
 
+// UpdateService permit to update an existing sevice like service state
+// It return updated Service if all work fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) UpdateService(service *Service) (*Service, error) {
 
 	if service == nil {
@@ -170,6 +174,9 @@ func (c *AmbariClient) UpdateService(service *Service) (*Service, error) {
 
 }
 
+// DeleteService permit to delete an existing service
+// Before to delete service, it will need to stop service
+// It return error if service is not found
 func (c *AmbariClient) DeleteService(clusterName string, serviceName string) error {
 
 	if clusterName == "" {
@@ -178,6 +185,8 @@ func (c *AmbariClient) DeleteService(clusterName string, serviceName string) err
 	if serviceName == "" {
 		panic("ServiceName can't be empty")
 	}
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("ServiceName: ", serviceName)
 
 	// Stop service before to delete it
 	_, err := c.StopService(clusterName, serviceName, false, true)
@@ -199,6 +208,10 @@ func (c *AmbariClient) DeleteService(clusterName string, serviceName string) err
 
 }
 
+// InstallService permit to start the service installation
+// It must have the service setting and component associated to host to work
+// It return service if all work fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) InstallService(service *Service) (*Service, error) {
 	if service == nil {
 		panic("Service can't be nil")

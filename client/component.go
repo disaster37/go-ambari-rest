@@ -1,3 +1,6 @@
+// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/component-resources.md
+// This file permit to manage Component in Ambari API
+
 package client
 
 import (
@@ -6,23 +9,24 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/component-resources.md
-
 const (
 	COMPONENT_CLIENT = "CLIENT"
 )
 
+// String permit to return ServiceComponent as Json string
 func (s *ServiceComponent) String() string {
 	json, _ := json.Marshal(s)
 	return string(json)
 }
 
+// CreateComponent permit to create new component
+// It return ServiceComponent if all right fine
+// It return error if something wrong when API call
 func (c *AmbariClient) CreateComponent(component *ServiceComponent) (*ServiceComponent, error) {
 
 	if component == nil {
 		panic("Component can't be nil")
 	}
-
 	log.Debug("Component: %s", component.String())
 
 	path := fmt.Sprintf("/clusters/%s/services/%s/components/%s", component.ServiceComponentInfo.ClusterName, component.ServiceComponentInfo.ServiceName, component.ServiceComponentInfo.ComponentName)
@@ -49,6 +53,10 @@ func (c *AmbariClient) CreateComponent(component *ServiceComponent) (*ServiceCom
 
 }
 
+// Component permit to get ServiceComponent item
+// It return ServiceComponent if found
+// It return nil if service Component not found
+// It return error if something wrong when API call
 func (c *AmbariClient) Component(clusterName string, serviceName string, componentName string) (*ServiceComponent, error) {
 
 	if clusterName == "" {
@@ -60,6 +68,9 @@ func (c *AmbariClient) Component(clusterName string, serviceName string, compone
 	if componentName == "" {
 		panic("ComponentName can't be empty")
 	}
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("ServiceName: ", serviceName)
+	log.Debug("ComponentName: ", componentName)
 
 	path := fmt.Sprintf("/clusters/%s/services/%s/components/%s", clusterName, serviceName, componentName)
 	resp, err := c.Client().R().Get(path)
@@ -84,6 +95,10 @@ func (c *AmbariClient) Component(clusterName string, serviceName string, compone
 	return component, nil
 }
 
+// Delete component permit to delete existing component
+// before to delete component, we need to remove them from host
+// It return error if component not exist
+// It return error if something wrong when API call
 func (c *AmbariClient) DeleteComponent(clusterName string, serviceName string, componentName string) error {
 
 	if clusterName == "" {
@@ -95,9 +110,29 @@ func (c *AmbariClient) DeleteComponent(clusterName string, serviceName string, c
 	if componentName == "" {
 		panic("ComponentName can't be empty")
 	}
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("ServiceName: ", serviceName)
+	log.Debug("ComponentName: ", componentName)
 
+	// Check if component exist
+	component, err := c.Component(clusterName, serviceName, componentName)
+	if err != nil {
+		return nil
+	}
+	if component == nil {
+		return NewAmbariError(404, "Component %s not found", componentName)
+	}
+
+	// Delete component on all host
+	for _, hostComponent := range component.HostComponentInfo {
+		err := c.DeleteHostComponent(hostComponent.ClusterName, hostComponent.Hostname, hostComponent.ComponentName)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Finnaly delete the component
 	path := fmt.Sprintf("/clusters/%s/services/%s/components/%s", clusterName, serviceName, componentName)
-
 	resp, err := c.Client().R().Delete(path)
 	if err != nil {
 		return err

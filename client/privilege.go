@@ -1,3 +1,6 @@
+// This file permit to manage privilege in Ambari cluster
+// Ambari documentation: https://community.hortonworks.com/questions/90797/manage-ambari-user-roles.html?childToView=90801
+
 package client
 
 import (
@@ -6,17 +9,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Ambari documentation: https://community.hortonworks.com/questions/90797/manage-ambari-user-roles.html?childToView=90801
-
+// Privilege object
 type Privilege struct {
 	PrivilegeInfo *PrivilegeInfo `json:"PrivilegeInfo"`
 }
-
 type PrivilegesResponse struct {
 	Response
 	Items []Privilege `json:"items"`
 }
-
 type PrivilegeInfo struct {
 	PrivilegeId     int64  `json:"privilege_id,omitempty"`
 	PermissionLabel string `json:"permission_label,omitempty"`
@@ -25,19 +25,25 @@ type PrivilegeInfo struct {
 	PrincipalType   string `json:"principal_type"`
 }
 
+// String return privilege object as Json string
 func (p *Privilege) String() string {
 	json, _ := json.Marshal(p)
 	return string(json)
 }
 
+// Privilege return existing privilege on cluster
+// It return the pivilege if is found
+// It return nil if not found
+// It return error if something wrong when it call the API
 func (c *AmbariClient) Privilege(clusterName string, id int64) (*Privilege, error) {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
 	}
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("Id: ", id)
 
 	path := fmt.Sprintf("/clusters/%s/privileges/%d", clusterName, id)
-
 	resp, err := c.Client().R().Get(path)
 	if err != nil {
 		return nil, err
@@ -62,6 +68,9 @@ func (c *AmbariClient) Privilege(clusterName string, id int64) (*Privilege, erro
 
 }
 
+// CreatePrivilege permit to create new privilege on cluster
+// It return the privilege if all work fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) CreatePrivilege(clusterName string, privilege *Privilege) (*Privilege, error) {
 
 	if clusterName == "" {
@@ -70,6 +79,8 @@ func (c *AmbariClient) CreatePrivilege(clusterName string, privilege *Privilege)
 	if privilege == nil {
 		panic("Privilege can't be nil")
 	}
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("Privilege :", privilege)
 
 	// Create the privilege
 	path := fmt.Sprintf("/clusters/%s/privileges", clusterName)
@@ -99,13 +110,15 @@ func (c *AmbariClient) CreatePrivilege(clusterName string, privilege *Privilege)
 
 }
 
+// DeletePrivilege permit to delete existing privielege on cluster
+// It return error if something wrong when it call the API
 func (c *AmbariClient) DeletePrivilege(clusterName string, id int64) error {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
 	}
+	log.Debug("ClusterName: ", clusterName)
 
-	// Create the privilege
 	path := fmt.Sprintf("/clusters/%s/privileges/%d", clusterName, id)
 	resp, err := c.Client().R().Delete(path)
 	if err != nil {
@@ -120,6 +133,7 @@ func (c *AmbariClient) DeletePrivilege(clusterName string, id int64) error {
 
 }
 
+// UpdatePrivilege permit to update existing privielege
 func (c *AmbariClient) UpdatePrivilege(clusterName string, privilege *Privilege) (*Privilege, error) {
 
 	if clusterName == "" {
@@ -128,6 +142,8 @@ func (c *AmbariClient) UpdatePrivilege(clusterName string, privilege *Privilege)
 	if privilege == nil {
 		panic("Privilege can't be nil")
 	}
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("Privilege: ", privilege)
 
 	// Update the privilege
 	path := fmt.Sprintf("/clusters/%s/privileges/%d", clusterName, privilege.PrivilegeInfo.PrivilegeId)
@@ -157,6 +173,10 @@ func (c *AmbariClient) UpdatePrivilege(clusterName string, privilege *Privilege)
 
 }
 
+// SearchPrivilege permit to get privilege by is name
+// It return privielege if is found
+// It return nil if is not found
+// It return error if something wrong when it call the API
 func (c *AmbariClient) SearchPrivilege(clusterName string, permissionName string, principalName string, principalType string) (*Privilege, error) {
 
 	if clusterName == "" {
@@ -171,9 +191,12 @@ func (c *AmbariClient) SearchPrivilege(clusterName string, permissionName string
 	if principalType == "" {
 		panic("PrincipalType can't be empty")
 	}
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("PermissionName: ", permissionName)
+	log.Debug("PrincipalName: ", principalName)
+	log.Debug("PrincipalType: ", principalType)
 
 	path := fmt.Sprintf("/clusters/%s/privileges", clusterName)
-
 	resp, err := c.Client().R().SetQueryParams(map[string]string{
 		"PrivilegeInfo/permission_name": permissionName,
 		"PrivilegeInfo/principal_name":  principalName,

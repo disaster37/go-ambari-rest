@@ -1,3 +1,6 @@
+// This file permit to manage repository on Ambari API
+// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/repository-version-resources.md
+
 package client
 
 import (
@@ -6,13 +9,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/repository-version-resources.md
-
+// Repository object
 type Repository struct {
 	RepositoryVersion *RepositoryVersion `json:"RepositoryVersions"`
 	OS                []OS               `json:"operating_systems"`
 }
-
 type RepositoryVersion struct {
 	Id           int    `json:"id,omitempty"`
 	Version      string `json:"repository_version"`
@@ -20,40 +21,37 @@ type RepositoryVersion struct {
 	StackName    string `json:"stack_name,omitempty"`
 	StackVersion string `json:"stack_version,omitempty"`
 }
-
 type OS struct {
 	Response
 	OSInfo           *OSInfo          `json:"OperatingSystems"`
 	RepositoriesData []RepositoryData `json:"repositories"`
 }
-
 type OSInfo struct {
 	Type              string `json:"os_type"`
 	ManagedRepository bool   `json:"ambari_managed_repositories, omitempty"`
 }
-
 type RepositoryData struct {
 	Response
 	RepositoryInfo *RepositoryInfo `json:"Repositories"`
 }
-
 type RepositoryInfo struct {
 	Id      string `json:"repo_id"`
 	Name    string `json:"repo_name"`
 	BaseUrl string `json:"base_url"`
 }
-
 type RepositoriesResponse struct {
 	Response
 	Items []Repository `json:"items"`
 }
 
+// String return repository object as Json string
 func (r *Repository) String() string {
 	json, _ := json.Marshal(r)
 	return string(json)
 }
 
-func (r *Repository) clean() {
+// CleanBeforeSave permit to clean some attributes before to save or update repository
+func (r *Repository) CleanBeforeSave() {
 	// Remove href before send
 	for index, os := range r.OS {
 		os.Href = nil
@@ -67,15 +65,17 @@ func (r *Repository) clean() {
 	}
 }
 
+// CreateRepository permit to create new repository
+// It return repository if all work fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, error) {
 
 	if repository == nil {
 		panic("Repository can't be nil")
 	}
-
 	log.Debug("Repository: %s", repository.String())
 
-	repository.clean()
+	repository.CleanBeforeSave()
 
 	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions", repository.RepositoryVersion.StackName, repository.RepositoryVersion.StackVersion)
 	jsonData, err := json.Marshal(repository)
@@ -105,7 +105,9 @@ func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, er
 
 }
 
-// Get cluster by ID is not supported by ambari api
+// Repository permit to get existing repository
+// It return repository if is found
+// It return nil if is not found
 func (c *AmbariClient) Repository(stackName string, stackVersion string, repositoryId int) (*Repository, error) {
 
 	if stackName == "" {
@@ -114,10 +116,10 @@ func (c *AmbariClient) Repository(stackName string, stackVersion string, reposit
 	if stackVersion == "" {
 		panic("StackVersion can't be empty")
 	}
+	log.Debug("StackName: ", stackName)
+	log.Debug("StackVersion: ", stackVersion)
 
 	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions/%d", stackName, stackVersion, repositoryId)
-
-	// Get the host components
 	resp, err := c.Client().R().Get(path)
 	if err != nil {
 		return nil, err
@@ -177,6 +179,9 @@ func (c *AmbariClient) Repository(stackName string, stackVersion string, reposit
 	return repository, nil
 }
 
+// UpdateRepository permit to update an existing repository like a repo URL
+// It return updated repository if all work fine
+// It return nil if something wrong when it call the API
 func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, error) {
 
 	if repository == nil {
@@ -184,7 +189,7 @@ func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, er
 	}
 	log.Debug("Repository: ", repository)
 
-	repository.clean()
+	repository.CleanBeforeSave()
 
 	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions/%d", repository.RepositoryVersion.StackName, repository.RepositoryVersion.StackVersion, repository.RepositoryVersion.Id)
 	jsonData, err := json.Marshal(repository)
@@ -200,7 +205,6 @@ func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, er
 		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
-	// Get the Host
 	repository, err = c.Repository(repository.RepositoryVersion.StackName, repository.RepositoryVersion.StackVersion, repository.RepositoryVersion.Id)
 	if err != nil {
 		return nil, err
@@ -215,6 +219,9 @@ func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, er
 
 }
 
+// DeleteRepository permit to remove the repository
+// You can't delete the current repository use by the cluster
+// It return error if something wrong when it call the API
 func (c *AmbariClient) DeleteRepository(stackName string, stackVersion string, repositoryId int) error {
 
 	if stackName == "" {
@@ -223,8 +230,10 @@ func (c *AmbariClient) DeleteRepository(stackName string, stackVersion string, r
 	if stackVersion == "" {
 		panic("StackVersion can't be empty")
 	}
-	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions/%d", stackName, stackVersion, repositoryId)
+	log.Debug("StackName: ", stackName)
+	log.Debug("StackVersion: ", stackVersion)
 
+	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions/%d", stackName, stackVersion, repositoryId)
 	resp, err := c.Client().R().Delete(path)
 	if err != nil {
 		return err
@@ -238,6 +247,10 @@ func (c *AmbariClient) DeleteRepository(stackName string, stackVersion string, r
 
 }
 
+// SearchRepository permit to get existing repository by is name
+// It return the repository if is found
+// It return nil if is not found
+// It return error if something wrong when it call the API
 func (c *AmbariClient) SearchRepository(stackName string, stackVersion string, repositoryName string, repositoryVersion string) (*Repository, error) {
 
 	if stackName == "" {
@@ -252,9 +265,12 @@ func (c *AmbariClient) SearchRepository(stackName string, stackVersion string, r
 	if repositoryVersion == "" {
 		panic("RepositoryVersion can't be empty")
 	}
+	log.Debug("StackName: ", stackName)
+	log.Debug("StackVersion: ", stackVersion)
+	log.Debug("RepositoryName ", repositoryName)
+	log.Debug("RepositoryVersion ", repositoryVersion)
 
 	path := fmt.Sprintf("/stacks/%s/versions/%s/repository_versions", stackName, stackVersion)
-
 	resp, err := c.Client().R().SetQueryParams(map[string]string{
 		"RepositoryVersions/repository_version": repositoryVersion,
 		"RepositoryVersions/display_name":       repositoryName,

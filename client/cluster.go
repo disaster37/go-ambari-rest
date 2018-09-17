@@ -1,3 +1,6 @@
+// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/cluster-resources.md
+// This file permit to manager cluster item on Ambari API
+
 package client
 
 import (
@@ -6,30 +9,33 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Ambari documentation: https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/cluster-resources.md
-
+// Cluster item
 type Cluster struct {
 	Cluster        *ClusterInfo             `json:"Clusters"`
 	Services       []Service                `json:"services,omitempty"`
 	DesiredConfigs map[string]Configuration `json:"desired_config,omitempty"`
 }
-
 type ClusterInfo struct {
 	ClusterId   int64  `json:"cluster_id,omitempty"`
 	ClusterName string `json:"cluster_name"`
 	Version     string `json:"version,omitempty"`
 }
 
+// String permit to return cluster object as Json string
 func (c *Cluster) String() string {
 	json, _ := json.Marshal(c)
 	return string(json)
 }
 
+// Create cluster eprmit to create new HDP cluster on Ambari
+// It return the cluster object if all work fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) CreateCluster(cluster *Cluster) (*Cluster, error) {
 
 	if cluster == nil {
 		panic("Cluster can't be nil")
 	}
+	log.Debug("Cluster: ", cluster)
 
 	// Create the Cluster
 	path := fmt.Sprintf("/clusters/%s", cluster.Cluster.ClusterName)
@@ -59,6 +65,9 @@ func (c *AmbariClient) CreateCluster(cluster *Cluster) (*Cluster, error) {
 
 }
 
+// CreateClusterFromTemplate permit to create new cluster from template file. It use the blueprint object to create automatically a cluster with topologie.
+// It return the cluster object if all work fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) CreateClusterFromTemplate(name string, jsonClusterTemplate string) (*Cluster, error) {
 
 	if name == "" {
@@ -98,7 +107,10 @@ func (c *AmbariClient) CreateClusterFromTemplate(name string, jsonClusterTemplat
 	return cluster, err
 }
 
-// Get cluster by ID is not supported by ambari api
+// Cluster permit to return cluster object from is name
+// It return cluster object if found
+// It return nil if cluster is not found
+// It return error if something wrong when it call the API
 func (c *AmbariClient) Cluster(clusterName string) (*Cluster, error) {
 
 	if clusterName == "" {
@@ -130,7 +142,8 @@ func (c *AmbariClient) Cluster(clusterName string) (*Cluster, error) {
 
 // Ambari not support to manage cluster by ID. We need to use clusterName instead.
 // So we need to have the old cluster name is the goal to rename it.
-// CHange AD version by this way is not supported. We need to use upgrade API to to that.
+// It return cluster if all right fine
+// It return error if something wrong when it call the API
 func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*Cluster, error) {
 
 	if oldClusterName == "" {
@@ -139,7 +152,7 @@ func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*
 	if cluster == nil {
 		panic("Cluster can't be nil")
 	}
-
+	log.Debug("OldClusterName: ", oldClusterName)
 	log.Debug("Cluster: ", cluster)
 
 	// Update the Cluster
@@ -177,11 +190,15 @@ func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*
 
 }
 
+// DeleteCluster permit to delete existing cluster
+// It need to delete all services and delete all hosts before to delete the cluster
+// It return error if cluster not exist of something wrong when it call the API
 func (c *AmbariClient) DeleteCluster(clusterName string) error {
 
 	if clusterName == "" {
 		panic("ClusterName can't be empty")
 	}
+	log.Debug("ClusterName: ", clusterName)
 
 	// Check if cluster exist
 	cluster, err := c.Cluster(clusterName)
@@ -189,7 +206,7 @@ func (c *AmbariClient) DeleteCluster(clusterName string) error {
 		return err
 	}
 	if cluster == nil {
-		return nil
+		return NewAmbariError(404, "Cluster %s not found", clusterName)
 	}
 
 	// Remove all services
