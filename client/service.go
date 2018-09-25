@@ -175,7 +175,7 @@ func (c *AmbariClient) UpdateService(service *Service) (*Service, error) {
 }
 
 // DeleteService permit to delete an existing service
-// Before to delete service, it will need to stop service
+// Before to delete service, it need to stop service and then delete all components
 // It return error if service is not found
 func (c *AmbariClient) DeleteService(clusterName string, serviceName string) error {
 
@@ -194,6 +194,16 @@ func (c *AmbariClient) DeleteService(clusterName string, serviceName string) err
 		return nil
 	}
 
+	// Get service and remove all components
+	service, err := c.Service(clusterName, serviceName)
+	for _, component := range service.ServiceComponents {
+		err := c.DeleteComponent(clusterName, serviceName, component.ServiceComponentInfo.ComponentName)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Finnaly delete the service
 	path := fmt.Sprintf("/clusters/%s/services/%s", clusterName, serviceName)
 	resp, err := c.Client().R().Delete(path)
 	if err != nil {

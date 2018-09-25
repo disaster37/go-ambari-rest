@@ -116,7 +116,7 @@ func main() {
 					Usage: "The role of the host in cluster",
 				},
 				cli.StringFlag{
-					Name:  "--rack",
+					Name:  "rack",
 					Usage: "The rack name",
 				},
 			},

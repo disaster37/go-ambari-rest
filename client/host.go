@@ -254,7 +254,7 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 }
 
 // Delete host permit to delete host on clusterS
-// It need to stop all component hosted on host before to delete the host
+// It need to delete all component hosted on host before to delete the host
 func (c *AmbariClient) DeleteHost(clusterName string, hostname string) error {
 
 	if clusterName == "" {
@@ -495,6 +495,59 @@ func (c *AmbariClient) StartAllComponentsInHost(clusterName string, hostname str
 			return err
 		}
 		log.Infof("Component %s is started", hostComponent.HostComponentInfo.ComponentName)
+	}
+
+	return nil
+
+}
+
+// DeleteAllComponentsInHost stop and delete all components in host in arbitrary order
+// if disableMaintenanceMode is set to true, it will remove maintenance state in host before to delete all ressources
+func (c *AmbariClient) DeleteAllComponentsInHost(clusterName string, hostname string, disableMaintenanceMode bool) error {
+
+	if clusterName == "" {
+		panic("ClusterName can't be empty")
+	}
+	if hostname == "" {
+		panic("Hostname can't be empty")
+	}
+
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("Hostname: ", hostname)
+	log.Debug("DisableMaintenanceMode: ", disableMaintenanceMode)
+
+	// Check if host exist
+	host, err := c.HostOnCluster(clusterName, hostname)
+	if err != nil {
+		return err
+	}
+	if host == nil {
+		return NewAmbariError(404, "Host %s not found in cluster %s", hostname, clusterName)
+	}
+	log.Debugf("Host %s found in cluster %s", hostname, clusterName)
+
+	// Disable maintenance state in host if needed
+	if disableMaintenanceMode == true && host.HostInfo.MaintenanceState != MAINTENANCE_STATE_OFF {
+		host.HostInfo.MaintenanceState = MAINTENANCE_STATE_OFF
+		host, err = c.UpdateHost(host)
+		if err != nil {
+			return err
+		}
+		log.Debugf("Maintenace state is disable on host %s", hostname)
+	}
+
+	// Stop and delete all components in host and wait
+	for _, hostComponent := range host.HostComponents {
+		_, err := c.StopHostComponent(clusterName, hostname, hostComponent.HostComponentInfo.ComponentName)
+		if err != nil {
+			return err
+		}
+		log.Infof("Component %s is stopped", hostComponent.HostComponentInfo.ComponentName)
+		err = c.DeleteHostComponent(clusterName, hostname, hostComponent.HostComponentInfo.ComponentName)
+		if err != nil {
+			return err
+		}
+		log.Infof("Component %s is deleted", hostComponent.HostComponentInfo.ComponentName)
 	}
 
 	return nil
