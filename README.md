@@ -772,3 +772,46 @@ Sample of how to use this command line
 ```sh
 ./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin stop-all-services --cluster-name test --enable-maintenance --force
 ```
+
+### Start all services in cluster
+
+This command line permit to start all services in HDP cluster.
+it has the following parameters:
+- **--cluster-name**: The HDP cluster name
+- **--disable-maintenance** (optionnal): Remove maintenance state for all services before to start them.
+
+
+Sample of how to use this command line
+```sh
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin start-all-services --cluster-name test --disable-maintenance
+```
+
+
+### Stop all components on node
+
+This command line permit to stop all components on particular node.
+it has the following parameters:
+- **--cluster-name**: The HDP cluster name
+- **--hostname**: The node where you should to stop components. Per default, it's the FQDN.
+- **--enable-maintenance** (optionnal): Put node in maintenance state.
+- **--force** (optionnal): Remove maintenance state on node before to stop components.
+
+
+Sample of how to use this command line
+```sh
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin stop-all-components-in-host --cluster-name test --hostname worker01.domain.com --enable-maintenance --force
+```
+
+### Start all components on node
+
+This command line permit to start all components on particular node.
+it has the following parameters:
+- **--cluster-name**: The HDP cluster name
+- **--hostname**: The node where you should to stop components. Per default, it's the FQDN.
+- **--disable-maintenance** (optionnal): Remove maintenance state on node before start components.
+
+
+Sample of how to use this command line
+```sh
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin start-all-components-in-host --cluster-name test --hostname worker01.domain.com --disable-maintenance
+```
