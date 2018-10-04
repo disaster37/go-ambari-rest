@@ -27,7 +27,7 @@ func (c *AmbariClient) CreateComponent(component *ServiceComponent) (*ServiceCom
 	if component == nil {
 		panic("Component can't be nil")
 	}
-	log.Debug("Component: %s", component.String())
+	log.Debugf("Component: %s", component.String())
 
 	path := fmt.Sprintf("/clusters/%s/services/%s/components/%s", component.ServiceComponentInfo.ClusterName, component.ServiceComponentInfo.ServiceName, component.ServiceComponentInfo.ComponentName)
 	resp, err := c.Client().R().Post(path)
@@ -47,7 +47,7 @@ func (c *AmbariClient) CreateComponent(component *ServiceComponent) (*ServiceCom
 		return nil, NewAmbariError(500, "Can't get component that just created")
 	}
 
-	log.Debug("Return component: %s", component)
+	log.Debugf("Return component: %s", component)
 
 	return component, nil
 

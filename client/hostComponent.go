@@ -41,7 +41,7 @@ func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostC
 	if hostComponent == nil {
 		panic("HostComponent can't be nil")
 	}
-	log.Debug("HostComponent: %s", hostComponent.String())
+	log.Debugf("HostComponent: %s", hostComponent.String())
 
 	// Check if hostcomponent is already installed
 	hostComponentTemp, err := c.HostComponent(hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
@@ -192,7 +192,7 @@ func (c *AmbariClient) StopHostComponent(clusterName string, hostname string, co
 
 	// Check if components is already stopped
 	if hostComponent.HostComponentInfo.State == SERVICE_STOPPED && hostComponent.HostComponentInfo.DesiredState == SERVICE_STOPPED {
-		log.Debugf("Component %s on host %s is already stopped")
+		log.Debugf("Component %s on host %s is already stopped", componentName, hostname)
 		return hostComponent, nil
 	}
 
@@ -261,7 +261,7 @@ func (c *AmbariClient) StartHostComponent(clusterName string, hostname string, c
 
 	// Check if components is already started
 	if hostComponent.HostComponentInfo.State == SERVICE_STARTED && hostComponent.HostComponentInfo.DesiredState == SERVICE_STARTED {
-		log.Debugf("Component %s on host %s is already started")
+		log.Debugf("Component %s on host %s is already started", componentName, hostname)
 		return hostComponent, nil
 	}
 

@@ -66,7 +66,7 @@ func (c *AmbariClient) CreateService(service *Service) (*Service, error) {
 	if service == nil {
 		panic("Service can't be nil")
 	}
-	log.Debug("Service: %s", service.String())
+	log.Debugf("Service: %s", service.String())
 
 	service.CleanBeforeSave()
 	service.ServiceInfo.State = SERVICE_INIT
@@ -90,7 +90,7 @@ func (c *AmbariClient) CreateService(service *Service) (*Service, error) {
 		return nil, err
 	}
 
-	log.Debug("Return service: %s", service)
+	log.Debugf("Return service: %s", service)
 
 	return service, nil
 
@@ -339,7 +339,7 @@ func (c *AmbariClient) StopService(clusterName string, serviceName string, enabl
 	if err != nil {
 		return nil, err
 	}
-	for service.ServiceInfo.MaintenanceState == MAINTENANCE_STATE_OFF && service.ServiceInfo.State != SERVICE_STOPPED {
+	for service.ServiceInfo.MaintenanceState == MAINTENANCE_STATE_OFF && service.ServiceInfo.State == SERVICE_STARTED {
 		time.Sleep(5 * time.Second)
 		service, err = c.Service(service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
 		if err != nil {

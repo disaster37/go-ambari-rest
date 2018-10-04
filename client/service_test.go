@@ -38,8 +38,8 @@ func (s *ClientTestSuite) TestService() {
 	if service != nil {
 
 		// Delete service
-		//err = s.client.DeleteService("test", "ZOOKEEPER")
-		//assert.NoError(s.T(), err)
+		err = s.client.DeleteService("test", "ZOOKEEPER")
+		assert.NoError(s.T(), err)
 	}
 
 	// To test update, install, start, stop and delete service, we need to provide some configuration

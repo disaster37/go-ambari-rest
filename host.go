@@ -30,7 +30,7 @@ func addHostInCluster(c *cli.Context) error {
 	if err != nil {
 		return cli.NewExitError(err, 1)
 	}
-	log.Infof("Successfully add new host %s in cluster %s with role %", c.String("hostname"), c.String("cluster-name"), c.String("role"))
+	log.Infof("Successfully add new host %s in cluster %s with role %s", c.String("hostname"), c.String("cluster-name"), c.String("role"))
 
 	// Set the rack for host
 	if c.String("rack") != "" {

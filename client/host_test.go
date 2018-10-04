@@ -3,10 +3,14 @@ package client
 import (
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
+	"time"
 )
 
 // Test the constructor
 func (s *ClientTestSuite) TestHost() {
+
+	//Wait some time that host join after cluster deletion
+	time.Sleep(60)
 
 	// Get host
 	host, err := s.client.Host("ambari-agent")
@@ -24,7 +28,6 @@ func (s *ClientTestSuite) TestHost() {
 		HostInfo: &HostInfo{
 			ClusterName: "test",
 			Hostname:    "ambari-agent",
-			Rack:        "/B1",
 		},
 	}
 	host, err = s.client.CreateHost(host)
@@ -33,7 +36,7 @@ func (s *ClientTestSuite) TestHost() {
 	if host != nil {
 		assert.Equal(s.T(), "test", host.HostInfo.ClusterName)
 		assert.Equal(s.T(), "ambari-agent", host.HostInfo.Hostname)
-		assert.Equal(s.T(), "/B1", host.HostInfo.Rack)
+		assert.Equal(s.T(), "/default-rack", host.HostInfo.Rack)
 		assert.Equal(s.T(), "OFF", host.HostInfo.MaintenanceState)
 	}
 
@@ -44,13 +47,14 @@ func (s *ClientTestSuite) TestHost() {
 	if host != nil {
 		assert.Equal(s.T(), "test", host.HostInfo.ClusterName)
 		assert.Equal(s.T(), "ambari-agent", host.HostInfo.Hostname)
-		assert.Equal(s.T(), "/B1", host.HostInfo.Rack)
+		assert.Equal(s.T(), "/default-rack", host.HostInfo.Rack)
 		assert.Equal(s.T(), "OFF", host.HostInfo.MaintenanceState)
 	}
 
 	// Update host
 	if host != nil {
 		host.HostInfo.MaintenanceState = "ON"
+		host.HostInfo.Rack = "/B1"
 		host, err = s.client.UpdateHost(host)
 		assert.NoError(s.T(), err)
 		assert.NotNil(s.T(), host)
@@ -91,7 +95,7 @@ func (s *ClientTestSuite) TestHost() {
 	if err != nil {
 		panic(err)
 	}
-	err = s.client.RegisterHostOnCluster("testHost", "ambari-agent3", "test", "host_group_1")
+	_, err = s.client.RegisterHostOnCluster("testHost", "ambari-agent3", "testHost", "host_group_1")
 	assert.NoError(s.T(), err)
 
 }

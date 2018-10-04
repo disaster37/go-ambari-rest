@@ -81,8 +81,8 @@ func (c *AmbariClient) CreateClusterFromTemplate(name string, jsonClusterTemplat
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Name: %s", name)
-	log.Debug("JsonClusterTemplate: %s", jsonClusterTemplate)
+	log.Debugf("Name: %s", name)
+	log.Debugf("JsonClusterTemplate: %s", jsonClusterTemplate)
 
 	// Create the Cluster
 	path := fmt.Sprintf("/clusters/%s", name)

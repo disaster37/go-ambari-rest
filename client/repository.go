@@ -73,7 +73,7 @@ func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, er
 	if repository == nil {
 		panic("Repository can't be nil")
 	}
-	log.Debug("Repository: %s", repository.String())
+	log.Debugf("Repository: %s", repository.String())
 
 	repository.CleanBeforeSave()
 
@@ -99,7 +99,7 @@ func (c *AmbariClient) CreateRepository(repository *Repository) (*Repository, er
 		return nil, NewAmbariError(500, "Can't get repository that just created")
 	}
 
-	log.Debug("Return repository: %s", repository)
+	log.Debugf("Return repository: %s", repository)
 
 	return repository, nil
 
@@ -175,7 +175,7 @@ func (c *AmbariClient) Repository(stackName string, stackVersion string, reposit
 			repository.OS[index] = os
 		}
 	}
-	log.Debug("Return repository: %s", repository)
+	log.Debugf("Return repository: %s", repository)
 	return repository, nil
 }
 
@@ -213,7 +213,7 @@ func (c *AmbariClient) UpdateRepository(repository *Repository) (*Repository, er
 		return nil, NewAmbariError(500, "Can't get repository that just updated")
 	}
 
-	log.Debug("Return repository: %s", repository.String())
+	log.Debugf("Return repository: %s", repository.String())
 
 	return repository, nil
 

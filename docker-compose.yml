@@ -3,9 +3,9 @@ services:
   postgres:
     image: postgres:9.6
     environment:
-      - POSTGRES_DB=ambari
-      - POSTGRES_PASSWORD=ambari
-      - POSTGRES_USER=ambari
+      POSTGRES_DB: ambari
+      POSTGRES_PASSWORD: ambari
+      POSTGRES_USER: ambari
   ambari-server:
     image: webcenter/ambari-server:latest
     links:
@@ -17,44 +17,47 @@ services:
       - ambari-server:ambari-server
     hostname: ambari-agent
     environment:
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
   ambari-agent2:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
     hostname: ambari-agent2
     environment:
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
   ambari-agent3:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
     hostname: ambari-agent3
     environment:
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
   test:
-    image: golang:1.9
+    image: golang:1.11
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
     volumes:
       - .:/go/src/github.com/disaster37/go-ambari-rest
     command: "bash -c \"go get -t ./... && go test ./...\""
     links:
       - ambari-server:ambari-server
+      - ambari-agent:ambari-agent
+      - ambari-agent2:ambari-agent2
+      - ambari-agent3:ambari-agent3
     environment:
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
   build:
-    image: golang:1.9
+    image: golang:1.11
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
     volumes:
       - .:/go/src/github.com/disaster37/go-ambari-rest
     command: "bash -c \"go get -d ./... && go get github.com/mitchellh/gox && gox -osarch='linux/amd64' -output 'release/ambari-cli_{{.OS}}_{{.Arch}}'\""
     environment:
-      - http_proxy=${http_proxy}
-      - https_proxy=${https_proxy}
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
   curl:
     image: appropriate/curl
     links:

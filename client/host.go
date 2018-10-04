@@ -40,6 +40,7 @@ func (h *Host) CleanBeforeSave() {
 }
 
 // CreateHost permit to create host (attach existing Ambari host on existing cluster)
+// I can't permit to set the rack info, you need to update to do that.
 // It return host if all work fine
 // It return error if something wrong when it call the API
 func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
@@ -47,7 +48,7 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 	if host == nil {
 		panic("Host can't be nil")
 	}
-	log.Debug("Host: %s", host.String())
+	log.Debugf("Host: %s", host.String())
 
 	host.CleanBeforeSave()
 	path := fmt.Sprintf("/clusters/%s/hosts/%s", host.HostInfo.ClusterName, host.HostInfo.Hostname)
@@ -72,7 +73,7 @@ func (c *AmbariClient) CreateHost(host *Host) (*Host, error) {
 		return nil, NewAmbariError(500, "Can't get host that just created")
 	}
 
-	log.Debug("Return host: %s", host)
+	log.Debugf("Return host: %s", host)
 
 	return host, nil
 
@@ -111,7 +112,7 @@ func (c *AmbariClient) HostOnCluster(clusterName string, hostname string) (*Host
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Return host: %s", host)
+	log.Debugf("Return host: %s", host)
 
 	return host, nil
 }
@@ -144,7 +145,7 @@ func (c *AmbariClient) HostsOnCluster(clusterName string) ([]Host, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Return host: %s", hosts)
+	log.Debugf("Return host: %s", hosts)
 
 	return hosts.Items, nil
 }
@@ -178,7 +179,7 @@ func (c *AmbariClient) Host(hostname string) (*Host, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Return host: %s", host)
+	log.Debugf("Return host: %s", host)
 
 	return host, nil
 }
@@ -208,7 +209,7 @@ func (c *AmbariClient) Hosts() ([]Host, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Return host: %s", hosts)
+	log.Debugf("Return host: %s", hosts)
 
 	return hosts.Items, nil
 }
@@ -247,7 +248,7 @@ func (c *AmbariClient) UpdateHost(host *Host) (*Host, error) {
 		return nil, NewAmbariError(500, "Can't get host that just updated")
 	}
 
-	log.Debug("Return host: %s", host.String())
+	log.Debugf("Return host: %s", host.String())
 
 	return host, err
 

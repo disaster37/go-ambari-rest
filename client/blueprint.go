@@ -45,8 +45,8 @@ func (c *AmbariClient) CreateBlueprint(name string, jsonBlueprint string) (*Blue
 	if jsonBlueprint == "" {
 		panic("JsonBlueprint can't be empty")
 	}
-	log.Debug("Name: %s", name)
-	log.Debug("JsonBlueprint: %s", jsonBlueprint)
+	log.Debugf("Name: %s", name)
+	log.Debugf("JsonBlueprint: %s", jsonBlueprint)
 
 	var blueprintTest interface{}
 	err := json.Unmarshal([]byte(jsonBlueprint), &blueprintTest)
@@ -73,7 +73,7 @@ func (c *AmbariClient) CreateBlueprint(name string, jsonBlueprint string) (*Blue
 		return nil, NewAmbariError(500, "Can't get blueprint that just created")
 	}
 
-	log.Debug("Return blueprint: %s", blueprint)
+	log.Debugf("Return blueprint: %s", blueprint)
 
 	return blueprint, nil
 
@@ -107,7 +107,7 @@ func (c *AmbariClient) Blueprint(name string) (*Blueprint, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Return blueprint: %s", blueprint)
+	log.Debugf("Return blueprint: %s", blueprint)
 
 	return blueprint, nil
 }
