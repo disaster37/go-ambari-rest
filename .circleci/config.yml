@@ -17,21 +17,24 @@ jobs:
       - image: webcenter/ambari-agent:latest
         name: ambari-agent
         command:
-          - echo "#!/bin/sh\necho 'ambari-agent'" > /tmp/hostname.sh
+          - echo '#!/bin/sh' > /tmp/hostname.sh
+          - echo 'echo "ambari-agent"' >> /tmp/hostname.sh
           - chmod +x /tmp/hostname.sh
           - echo "hostname_script=/tmp/hostname.sh" >> /etc/ambari-agent/conf/ambari-agent.ini
           - /init
       - image: webcenter/ambari-agent:latest
         name: ambari-agent2
         command:
-          - echo "#!/bin/sh\necho 'ambari-agent2'" > /tmp/hostname.sh
+          - echo '#!/bin/sh' > /tmp/hostname.sh
+          - echo 'echo "ambari-agent2"' >> /tmp/hostname.sh
           - chmod +x /tmp/hostname.sh
           - echo "hostname_script=/tmp/hostname.sh" >> /etc/ambari-agent/conf/ambari-agent.ini
           - /init
       - image: webcenter/ambari-agent:latest
         name: ambari-agent3
         command:
-          - echo "#!/bin/sh\necho 'ambari-agent3'" > /tmp/hostname.sh
+          - echo '#!/bin/sh' > /tmp/hostname.sh
+          - echo 'echo "ambari-agent3"' >> /tmp/hostname.sh
           - chmod +x /tmp/hostname.sh
           - echo "hostname_script=/tmp/hostname.sh" >> /etc/ambari-agent/conf/ambari-agent.ini
           - /init
