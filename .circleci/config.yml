@@ -1,0 +1,68 @@
+# Golang CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-go/ for more details
+version: 2
+jobs:
+  test:
+    docker:
+      - image: circleci/golang:1.11
+      - image: webcenter/ambari-server:latest
+        name: ambari-server
+      - image: webcenter/ambari-agent:latest
+        name: ambari-agent
+      - image: webcenter/ambari-agent:latest
+        name: ambari-agent2
+      - image: webcenter/ambari-agent:latest
+        name: ambari-agent3
+    working_directory: /go/src/github.com/disaster37/go-ambari-rest
+    steps:
+      - checkout
+      - run: go get -v -t -d ./...
+      - run: go test -v ./...
+  build:
+    docker:
+      - image: circleci/golang:1.11
+    working_directory: /go/src/github.com/disaster37/go-ambari-rest
+    steps:
+      - checkout
+      - run: go get -v -t -d ./...
+      - run: go build
+  release:
+    docker:
+      - image: circleci/golang:1.11
+        environment:
+          - GITHUB_TOKEN: $GITHUB_TOKEN
+          - CIRCLE_PROJECT_USERNAME: $CIRCLE_PROJECT_USERNAME
+          - CIRCLE_PROJECT_REPONAME: $CIRCLE_PROJECT_REPONAME
+          - CIRCLE_TAG: $CIRCLE_TAG
+    working_directory: /go/src/github.com/disaster37/go-ambari-rest
+    steps:
+      - checkout
+      - run: go get -v -t -d ./...
+      - run: go get github.com/mitchellh/gox
+      - run: go get github.com/tcnksm/ghr
+      - run: sed -i 's/app.Version := "develop"/app.Version := "$CIRCLE_TAG"/' ambari-cli.go
+      - run: gox -output "dist/ambari-cli_{{.OS}}_{{.Arch}}"
+      - run: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME $CIRCLE_TAG dist/
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /.*/
+      - build:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /.*/
+      - release:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/
