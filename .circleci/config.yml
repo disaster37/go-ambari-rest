@@ -18,6 +18,7 @@ jobs:
     steps:
       - checkout
       - run: go get -v -t -d ./...
+      - run: until $(curl --output /dev/null --silent --head --fail http://ambari-server:8080); do sleep 5; done
       - run: go test -v ./...
   build:
     docker:
