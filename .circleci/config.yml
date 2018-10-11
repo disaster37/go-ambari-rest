@@ -16,7 +16,7 @@ jobs:
         name: ambari-server
       - image: webcenter/ambari-agent:latest
         name: ambari-agent
-        command: "echo '#!/bin/sh' > /etc/ambari-agent/hostname.sh"
+        command: sh -c "echo '#!/bin/sh' > /etc/ambari-agent/hostname.sh"
           
       - image: webcenter/ambari-agent:latest
         name: ambari-agent2
