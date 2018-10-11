@@ -52,7 +52,7 @@ jobs:
       - run: go get github.com/mitchellh/gox
       - run: go get github.com/tcnksm/ghr
       - run: sed -i 's/app.Version := "develop"/app.Version := "$CIRCLE_TAG"/' ambari-cli.go
-      - run: gox -output "dist/ambari-cli_{{.OS}}_{{.Arch}}"
+      - run: gox -os="linux" -output "dist/ambari-cli_{{.OS}}_{{.Arch}}"
       - run: ghr -t $GITHUB_TOKEN -u $CIRCLE_PROJECT_USERNAME -r $CIRCLE_PROJECT_REPONAME $CIRCLE_TAG dist/
 workflows:
   version: 2
