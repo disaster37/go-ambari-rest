@@ -16,23 +16,28 @@ jobs:
         name: ambari-server
       - image: webcenter/ambari-agent:latest
         name: ambari-agent
-        command: sh -c "echo '#!/bin/sh' > /etc/ambari-agent/hostname.sh"
+        command:
+          - sh -c "echo '#!/bin/sh' > /tmp/hostname.sh"
+          - sh -c "echo 'echo ambari-agent' >> /tmp/hostname.sh"
+          - chmod +x /tmp/hostname.sh
+          - sh -c "echo 'hostname_script=/tmp/hostname.sh' >> /etc/ambari-agent/conf/ambari-agent.ini"
+          - /init
           
       - image: webcenter/ambari-agent:latest
         name: ambari-agent2
         command:
-          - echo '#!/bin/sh' > /tmp/hostname.sh
-          - echo 'echo "ambari-agent2"' >> /tmp/hostname.sh
+          - sh -c "echo '#!/bin/sh' > /tmp/hostname.sh"
+          - sh -c "echo 'echo ambari-agent2' >> /tmp/hostname.sh"
           - chmod +x /tmp/hostname.sh
-          - echo "hostname_script=/tmp/hostname.sh" >> /etc/ambari-agent/conf/ambari-agent.ini
+          - sh -c "echo 'hostname_script=/tmp/hostname.sh' >> /etc/ambari-agent/conf/ambari-agent.ini"
           - /init
       - image: webcenter/ambari-agent:latest
         name: ambari-agent3
         command:
-          - echo '#!/bin/sh' > /tmp/hostname.sh
-          - echo 'echo "ambari-agent3"' >> /tmp/hostname.sh
+          - sh -c "echo '#!/bin/sh' > /tmp/hostname.sh"
+          - sh -c "echo 'echo ambari-agent3' >> /tmp/hostname.sh"
           - chmod +x /tmp/hostname.sh
-          - echo "hostname_script=/tmp/hostname.sh" >> /etc/ambari-agent/conf/ambari-agent.ini
+          - sh -c "echo 'hostname_script=/tmp/hostname.sh' >> /etc/ambari-agent/conf/ambari-agent.ini"
           - /init
     working_directory: /go/src/github.com/disaster37/go-ambari-rest
     steps:
