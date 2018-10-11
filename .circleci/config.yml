@@ -17,8 +17,8 @@ jobs:
       - image: webcenter/ambari-agent:latest
         name: ambari-agent
         command:
-          - echo '#!/bin/sh' > /tmp/hostname.sh
-          - echo 'echo "ambari-agent"' >> /tmp/hostname.sh
+          - echo '#!/bin/sh' > /etc/ambari-agent/hostname.sh
+          - echo 'echo "ambari-agent"' >> /etc/ambari-agent/hostname.sh
           - chmod +x /tmp/hostname.sh
           - echo "hostname_script=/tmp/hostname.sh" >> /etc/ambari-agent/conf/ambari-agent.ini
           - /init
