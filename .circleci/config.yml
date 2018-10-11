@@ -16,13 +16,13 @@ jobs:
         name: ambari-server
       - image: webcenter/ambari-agent:latest
         name: ambari-agent
-        command: sh -c "echo '#!/bin/sh' > /tmp/hostname.sh && echo 'echo ambari-agent' >> /tmp/hostname.sh && chmod +x /tmp/hostname.sh && sed -i 's/\[agent\]/[agent]\nhostname_script=/tmp/hostname.sh/g' /etc/ambari-agent/conf/ambari-agent.ini && /init"
+        command: sh -c "echo '#!/bin/sh' > /tmp/hostname.sh && echo 'echo ambari-agent' >> /tmp/hostname.sh && chmod +x /tmp/hostname.sh && sed -i 's/\[agent\]/[agent]\nhostname_script=\/tmp\/hostname.sh/g' /etc/ambari-agent/conf/ambari-agent.ini && /init"
       - image: webcenter/ambari-agent:latest
         name: ambari-agent2
-        command: sh -c "echo '#!/bin/sh' > /tmp/hostname.sh && echo 'echo ambari-agent2' >> /tmp/hostname.sh && chmod +x /tmp/hostname.sh && sed -i 's/\[agent\]/[agent]\nhostname_script=/tmp/hostname.sh/g' /etc/ambari-agent/conf/ambari-agent.ini && /init"
+        command: sh -c "echo '#!/bin/sh' > /tmp/hostname.sh && echo 'echo ambari-agent2' >> /tmp/hostname.sh && chmod +x /tmp/hostname.sh && sed -i 's/\[agent\]/[agent]\nhostname_script=\/tmp\/hostname.sh/g' /etc/ambari-agent/conf/ambari-agent.ini && /init"
       - image: webcenter/ambari-agent:latest
         name: ambari-agent3
-        command: sh -c "echo '#!/bin/sh' > /tmp/hostname.sh && echo 'echo ambari-agent3' >> /tmp/hostname.sh && chmod +x /tmp/hostname.sh && sed -i 's/\[agent\]/[agent]\nhostname_script=/tmp/hostname.sh/g' /etc/ambari-agent/conf/ambari-agent.ini && /init"
+        command: sh -c "echo '#!/bin/sh' > /tmp/hostname.sh && echo 'echo ambari-agent3' >> /tmp/hostname.sh && chmod +x /tmp/hostname.sh && sed -i 's/\[agent\]/[agent]\nhostname_script=\/tmp\/hostname.sh/g' /etc/ambari-agent/conf/ambari-agent.ini && /init"
     working_directory: /go/src/github.com/disaster37/go-ambari-rest
     steps:
       - checkout
