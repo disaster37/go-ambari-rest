@@ -11,6 +11,8 @@ services:
     links:
       - postgres:db
     hostname: ambari-server
+    ports:
+      - 80:8080/tcp
   ambari-agent:
     image: webcenter/ambari-agent:latest
     links:
@@ -40,7 +42,7 @@ services:
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
     volumes:
       - .:/go/src/github.com/disaster37/go-ambari-rest
-    command: "bash -c \"go get -t ./... && go test ./...\""
+    command: "bash -c \"go get -t ./... && go test ./... -parallel=1\""
     links:
       - ambari-server:ambari-server
       - ambari-agent:ambari-agent
@@ -71,3 +73,4 @@ services:
     links:
       - ambari-server:ambari-server
       - ambari-agent:ambari-agent
+      - ambari-agent2:ambari-agent2

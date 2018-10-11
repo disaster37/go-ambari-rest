@@ -11,7 +11,7 @@ import (
 
 // Cluster item
 type Cluster struct {
-	Cluster        *ClusterInfo             `json:"Clusters"`
+	ClusterInfo    *ClusterInfo             `json:"Clusters"`
 	Services       []Service                `json:"services,omitempty"`
 	DesiredConfigs map[string]Configuration `json:"desired_config,omitempty"`
 }
@@ -38,7 +38,7 @@ func (c *AmbariClient) CreateCluster(cluster *Cluster) (*Cluster, error) {
 	log.Debug("Cluster: ", cluster)
 
 	// Create the Cluster
-	path := fmt.Sprintf("/clusters/%s", cluster.Cluster.ClusterName)
+	path := fmt.Sprintf("/clusters/%s", cluster.ClusterInfo.ClusterName)
 	jsonData, err := json.Marshal(cluster)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (c *AmbariClient) CreateCluster(cluster *Cluster) (*Cluster, error) {
 	}
 
 	// Get the cluster
-	cluster, err = c.Cluster(cluster.Cluster.ClusterName)
+	cluster, err = c.Cluster(cluster.ClusterInfo.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -158,8 +158,8 @@ func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*
 	// Update the Cluster
 	path := fmt.Sprintf("/clusters/%s", oldClusterName)
 	cluster = &Cluster{
-		Cluster: &ClusterInfo{
-			ClusterName: cluster.Cluster.ClusterName,
+		ClusterInfo: &ClusterInfo{
+			ClusterName: cluster.ClusterInfo.ClusterName,
 		},
 	}
 	jsonData, err := json.Marshal(cluster)
@@ -176,7 +176,7 @@ func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*
 	}
 
 	// Get the cluster
-	cluster, err = c.Cluster(cluster.Cluster.ClusterName)
+	cluster, err = c.Cluster(cluster.ClusterInfo.ClusterName)
 	if err != nil {
 		return nil, err
 	}
@@ -209,11 +209,17 @@ func (c *AmbariClient) DeleteCluster(clusterName string) error {
 		return NewAmbariError(404, "Cluster %s not found", clusterName)
 	}
 
+	// Force to stop all services
+	err = c.StopAllServices(cluster, false, true)
+	if err != nil {
+		return err
+	}
+
 	// Remove all services
 	for _, service := range cluster.Services {
 		err = c.DeleteService(service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 
@@ -225,7 +231,7 @@ func (c *AmbariClient) DeleteCluster(clusterName string) error {
 	for _, host := range hosts {
 		err := c.DeleteHost(clusterName, host.HostInfo.Hostname)
 		if err != nil {
-			return nil
+			return err
 		}
 	}
 

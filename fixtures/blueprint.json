@@ -12,7 +12,7 @@
           "name" : "ZOOKEEPER_CLIENT"
         }
       ],
-      "cardinality" : "0"
+      "cardinality" : "1"
     },
     {
       "name" : "host_group_2",

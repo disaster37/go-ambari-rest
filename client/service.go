@@ -22,27 +22,15 @@ const (
 
 // Service object
 type Service struct {
-	ServiceInfo       *ServiceInfo       `json:"ServiceInfo"`
-	ServiceComponents []ServiceComponent `json:"components,omitempty"`
+	ServiceInfo *ServiceInfo `json:"ServiceInfo"`
+	Components  []Component  `json:"components,omitempty"`
 }
 type ServiceInfo struct {
 	ClusterName      string `json:"cluster_name,omitempty"`
 	ServiceName      string `json:"service_name,omitempty"`
 	State            string `json:"state,omitempty"`
 	RepositoryId     int    `json:"desired_repository_version_id,omitempty"`
-	DesiredState     string `json:"desired_state,omitempty"`
 	MaintenanceState string `json:"maintenance_state,omitempty"`
-}
-type ServiceComponent struct {
-	ServiceComponentInfo *ServiceComponentInfo `json:"ServiceComponentInfo"`
-	HostComponentInfo    []HostComponentInfo   `json:"host_components"`
-}
-type ServiceComponentInfo struct {
-	ClusterName   string `json:"cluster_name,omitempty"`
-	ServiceName   string `json:"service_name,omitempty"`
-	ComponentName string `json:"component_name,omitempty"`
-	State         string `json:"state,omitempty"`
-	Category      string `json:"category,omitempty"`
 }
 
 // String permit to get service object as Json string
@@ -53,8 +41,7 @@ func (s *Service) String() string {
 
 // ClearBeforeSave permit to clean service before save or update it
 func (s *Service) CleanBeforeSave() {
-	s.ServiceComponents = nil
-	s.ServiceInfo.DesiredState = ""
+	s.Components = nil
 }
 
 // CreateService permit to create new service
@@ -108,8 +95,8 @@ func (c *AmbariClient) Service(clusterName string, serviceName string) (*Service
 	if serviceName == "" {
 		panic("ServiceName can't be empty")
 	}
-	log.Debug("ClusterName", clusterName)
-	log.Debug("ServiceName", serviceName)
+	log.Debug("ClusterName: ", clusterName)
+	log.Debug("ServiceName: ", serviceName)
 
 	path := fmt.Sprintf("/clusters/%s/services/%s", clusterName, serviceName)
 	resp, err := c.Client().R().Get(path)
@@ -191,13 +178,13 @@ func (c *AmbariClient) DeleteService(clusterName string, serviceName string) err
 	// Stop service before to delete it
 	_, err := c.StopService(clusterName, serviceName, false, true)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Get service and remove all components
 	service, err := c.Service(clusterName, serviceName)
-	for _, component := range service.ServiceComponents {
-		err := c.DeleteComponent(clusterName, serviceName, component.ServiceComponentInfo.ComponentName)
+	for _, component := range service.Components {
+		err := c.DeleteComponent(clusterName, serviceName, component.ComponentInfo.ComponentName)
 		if err != nil {
 			return err
 		}
@@ -218,6 +205,55 @@ func (c *AmbariClient) DeleteService(clusterName string, serviceName string) err
 
 }
 
+// SendRequestService permit to start / stop service on ambari with message displayed on operation task in Ambari UI
+// It keep only State and MaintenanceState field when it send the request
+// It return RequestTask if all work fine
+// It return nil if no request is created
+// It return error if something wrong when it call the API
+func (c *AmbariClient) SendRequestService(request *Request) (*RequestTask, error) {
+
+	if request == nil {
+		panic("Request can't be nil")
+	}
+	log.Debug("Request: ", request)
+	service := request.Body.(*Service)
+	serviceTemp := &Service{
+		ServiceInfo: &ServiceInfo{
+			State:            service.ServiceInfo.State,
+			MaintenanceState: service.ServiceInfo.MaintenanceState,
+		},
+	}
+	request.Body = serviceTemp
+
+	log.Debug("Sended Request: ", request)
+
+	path := fmt.Sprintf("/clusters/%s/services/%s", service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.Client().R().SetBody(jsonData).Put(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Response when send request: ", resp)
+	if resp.StatusCode() >= 300 {
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+	}
+	if len(resp.Body()) == 0 {
+		return nil, nil
+	}
+	requestTask := &RequestTask{}
+	err = json.Unmarshal(resp.Body(), requestTask)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Return request: %s", requestTask)
+
+	return requestTask, err
+
+}
+
 // InstallService permit to start the service installation
 // It must have the service setting and component associated to host to work
 // It return service if all work fine
@@ -229,7 +265,7 @@ func (c *AmbariClient) InstallService(service *Service) (*Service, error) {
 	log.Debug("Service: ", service)
 
 	// Check if service is already installed
-	if service.ServiceInfo.State == SERVICE_INSTALLED && service.ServiceInfo.DesiredState == SERVICE_INSTALLED {
+	if service.ServiceInfo.State == SERVICE_INSTALLED {
 		log.Debugf("The service %s is already installed", service.ServiceInfo.ServiceName)
 		return service, nil
 	}
@@ -241,7 +277,7 @@ func (c *AmbariClient) InstallService(service *Service) (*Service, error) {
 		return nil, err
 	}
 	for service.ServiceInfo.State != SERVICE_INSTALLED {
-		time.Sleep(5 * time.Second)
+		time.Sleep(10 * time.Second)
 		service, err = c.Service(service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
 		if err != nil {
 			return nil, err
@@ -276,7 +312,7 @@ func (c *AmbariClient) StartService(clusterName string, serviceName string, disa
 	}
 
 	// Check if service is already started
-	if service.ServiceInfo.State == SERVICE_STARTED && service.ServiceInfo.DesiredState == SERVICE_STARTED {
+	if service.ServiceInfo.State == SERVICE_STARTED {
 		log.Debugf("Service %s is already started", service.ServiceInfo.ServiceName)
 		return service, nil
 	}
@@ -285,17 +321,44 @@ func (c *AmbariClient) StartService(clusterName string, serviceName string, disa
 	if disableMaintenanceMode == true {
 		service.ServiceInfo.MaintenanceState = MAINTENANCE_STATE_OFF
 	}
-	service, err = c.UpdateService(service)
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: fmt.Sprintf("Start service %s from API", serviceName),
+		},
+		Body: service,
+	}
+	requestTask, err := c.SendRequestService(request)
 	if err != nil {
 		return nil, err
 	}
-	for service.ServiceInfo.MaintenanceState == MAINTENANCE_STATE_OFF && service.ServiceInfo.State != SERVICE_STARTED {
-		time.Sleep(5 * time.Second)
-		service, err = c.Service(service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
-		if err != nil {
-			return nil, err
+
+	// Wait the end of the request if request has been created
+	if requestTask != nil {
+		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
+
+			requestTask, err = c.Request(clusterName, requestTask.RequestTaskInfo.Id)
+			if err != nil {
+				return nil, err
+			}
+			if requestTask == nil {
+				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
+			}
+
+			time.Sleep(10 * time.Second)
+		}
+
+		// Check the status
+		if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+			return nil, NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
 		}
 	}
+
+	// Finnaly get the service
+	service, err = c.Service(clusterName, serviceName)
+	if err != nil {
+		return nil, err
+	}
+
 	return service, nil
 }
 
@@ -325,7 +388,7 @@ func (c *AmbariClient) StopService(clusterName string, serviceName string, enabl
 	}
 
 	// Check if service is already stopped
-	if service.ServiceInfo.State == SERVICE_STOPPED && service.ServiceInfo.DesiredState == SERVICE_STOPPED {
+	if service.ServiceInfo.State == SERVICE_STOPPED {
 		log.Debugf("The service %s is already stopped", service.ServiceInfo.ServiceName)
 		return service, nil
 	}
@@ -335,16 +398,37 @@ func (c *AmbariClient) StopService(clusterName string, serviceName string, enabl
 	if force == true {
 		service.ServiceInfo.MaintenanceState = MAINTENANCE_STATE_OFF
 	}
-	service, err = c.UpdateService(service)
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: fmt.Sprintf("Stop service %s from API", serviceName),
+		},
+		Body: service,
+	}
+	requestTask, err := c.SendRequestService(request)
 	if err != nil {
 		return nil, err
 	}
-	for service.ServiceInfo.MaintenanceState == MAINTENANCE_STATE_OFF && service.ServiceInfo.State == SERVICE_STARTED {
-		time.Sleep(5 * time.Second)
-		service, err = c.Service(service.ServiceInfo.ClusterName, service.ServiceInfo.ServiceName)
-		if err != nil {
-			return nil, err
+
+	if requestTask != nil {
+
+		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
+
+			requestTask, err = c.Request(clusterName, requestTask.RequestTaskInfo.Id)
+			if err != nil {
+				return nil, err
+			}
+			if requestTask == nil {
+				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
+			}
+
+			time.Sleep(10 * time.Second)
 		}
+
+		// Check the status
+		if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+			return nil, NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
+		}
+
 	}
 
 	// Enable maintenance state if needed
@@ -354,6 +438,12 @@ func (c *AmbariClient) StopService(clusterName string, serviceName string, enabl
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	// Finnaly get the service
+	service, err = c.Service(clusterName, serviceName)
+	if err != nil {
+		return nil, err
 	}
 
 	return service, nil
@@ -381,8 +471,14 @@ func (c *AmbariClient) StopAllServices(cluster *Cluster, enableMaintenanceMode b
 		service.ServiceInfo.MaintenanceState = MAINTENANCE_STATE_OFF
 		log.Debugf("Disable maintenance state before stop all services")
 	}
-	path := fmt.Sprintf("/clusters/%s/services", cluster.Cluster.ClusterName)
-	jsonData, err := json.Marshal(service)
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: "Stop all services from API",
+		},
+		Body: service,
+	}
+	path := fmt.Sprintf("/clusters/%s/services", cluster.ClusterInfo.ClusterName)
+	jsonData, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
@@ -395,28 +491,34 @@ func (c *AmbariClient) StopAllServices(cluster *Cluster, enableMaintenanceMode b
 		return NewAmbariError(resp.StatusCode(), resp.Status())
 	}
 
-	// Wait all service is stopped
-	currentServicesCheck := make([]Service, len(cluster.Services))
-	copy(currentServicesCheck, cluster.Services)
-	serviceToCheck := make([]Service, 0, 1)
-	for len(currentServicesCheck) > 0 {
-		for _, service := range currentServicesCheck {
-			serviceTemp, err := c.Service(cluster.Cluster.ClusterName, service.ServiceInfo.ServiceName)
-			if err != nil {
-				return err
-			}
-			if serviceTemp.ServiceInfo.State != SERVICE_STOPPED {
-				serviceToCheck = append(serviceToCheck, service)
-				log.Debugf("Wait service %s is stopped", service.ServiceInfo.ServiceName)
-			} else {
-				log.Infof("Service %s is stopped", service.ServiceInfo.ServiceName)
-			}
+	if len(resp.Body()) == 0 {
+		log.Debugf("All service already stopped")
+		return nil
+	}
+	requestTask := &RequestTask{}
+	err = json.Unmarshal(resp.Body(), requestTask)
+	if err != nil {
+		return err
+	}
+	log.Debugf("Return request: %s", requestTask)
+
+	// Wait the end of the request
+	for requestTask.RequestTaskInfo.ProgressPercent < 100 {
+
+		requestTask, err = c.Request(cluster.ClusterInfo.ClusterName, requestTask.RequestTaskInfo.Id)
+		if err != nil {
+			return err
+		}
+		if requestTask == nil {
+			return NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
 		}
 
-		currentServicesCheck = make([]Service, len(serviceToCheck))
-		copy(currentServicesCheck, serviceToCheck)
-		serviceToCheck = make([]Service, 0, 1)
 		time.Sleep(10 * time.Second)
+	}
+
+	// Check the status
+	if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+		return NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
 	}
 
 	// Put all services in maintenance state if needed
@@ -466,8 +568,14 @@ func (c *AmbariClient) StartAllServices(cluster *Cluster, disableMaintenanceMode
 		service.ServiceInfo.MaintenanceState = MAINTENANCE_STATE_OFF
 		log.Debugf("Disable maintenance state in all services before start them")
 	}
-	path := fmt.Sprintf("/clusters/%s/services", cluster.Cluster.ClusterName)
-	jsonData, err := json.Marshal(service)
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: "Start all services from API",
+		},
+		Body: service,
+	}
+	path := fmt.Sprintf("/clusters/%s/services", cluster.ClusterInfo.ClusterName)
+	jsonData, err := json.Marshal(request)
 	if err != nil {
 		return err
 	}
@@ -479,29 +587,34 @@ func (c *AmbariClient) StartAllServices(cluster *Cluster, disableMaintenanceMode
 	if resp.StatusCode() >= 300 {
 		return NewAmbariError(resp.StatusCode(), resp.Status())
 	}
+	if len(resp.Body()) == 0 {
+		log.Debugf("All service already started")
+		return nil
+	}
+	requestTask := &RequestTask{}
+	err = json.Unmarshal(resp.Body(), requestTask)
+	if err != nil {
+		return err
+	}
+	log.Debugf("Return request: %s", requestTask)
 
-	// Wait all service is sstarted
-	currentServicesCheck := make([]Service, len(cluster.Services))
-	copy(currentServicesCheck, cluster.Services)
-	serviceToCheck := make([]Service, 0, 1)
-	for len(currentServicesCheck) > 0 {
-		for _, service := range currentServicesCheck {
-			serviceTemp, err := c.Service(cluster.Cluster.ClusterName, service.ServiceInfo.ServiceName)
-			if err != nil {
-				return err
-			}
-			if serviceTemp.ServiceInfo.State != SERVICE_STARTED {
-				serviceToCheck = append(serviceToCheck, service)
-				log.Debugf("Wait service %s is started", service.ServiceInfo.ServiceName)
-			} else {
-				log.Infof("Service %s is started", service.ServiceInfo.ServiceName)
-			}
+	// Wait the end of the request
+	for requestTask.RequestTaskInfo.ProgressPercent < 100 {
+
+		requestTask, err = c.Request(cluster.ClusterInfo.ClusterName, requestTask.RequestTaskInfo.Id)
+		if err != nil {
+			return err
+		}
+		if requestTask == nil {
+			return NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
 		}
 
-		currentServicesCheck = make([]Service, len(serviceToCheck))
-		copy(currentServicesCheck, serviceToCheck)
-		serviceToCheck = make([]Service, 0, 1)
 		time.Sleep(10 * time.Second)
+	}
+
+	// Check the status
+	if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+		return NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
 	}
 
 	return nil

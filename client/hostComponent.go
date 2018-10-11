@@ -15,7 +15,7 @@ type HostComponent struct {
 	HostComponentInfo *HostComponentInfo `json:"HostRoles"`
 }
 type HostComponentInfo struct {
-	ClusterName   string `json:"cluster_name"`
+	ClusterName   string `json:"cluster_name,omitempty"`
 	ComponentName string `json:"component_name,omitempty"`
 	Hostname      string `json:"host_name,omitempty"`
 	State         string `json:"state,omitempty"`
@@ -54,7 +54,7 @@ func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostC
 
 	// Create the Host component
 	hostComponent.CleanBeforeSave()
-	hostComponent.HostComponentInfo.State = SERVICE_INSTALLED
+	hostComponent.HostComponentInfo.State = SERVICE_INIT
 	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
 	resp, err := c.Client().R().Post(path)
 	if err != nil {
@@ -69,13 +69,44 @@ func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostC
 	if err != nil {
 		return nil, err
 	}
-	for hostComponent.HostComponentInfo.State != SERVICE_INSTALLED {
-		time.Sleep(5 * time.Second)
-		hostComponent, err = c.HostComponent(hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
-		if err != nil {
-			return nil, err
+
+	// Install host component
+	hostComponent.HostComponentInfo.State = SERVICE_INSTALLED
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: fmt.Sprintf("Install component %s on %s from API", hostComponent.HostComponentInfo.ComponentName, hostComponent.HostComponentInfo.Hostname),
+		},
+		Body: hostComponent,
+	}
+	requestTask, err := c.SendRequestHostComponent(request)
+	if err != nil {
+		return nil, err
+	}
+
+	if requestTask != nil {
+		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
+
+			requestTask, err = c.Request(hostComponent.HostComponentInfo.ClusterName, requestTask.RequestTaskInfo.Id)
+			if err != nil {
+				return nil, err
+			}
+			if requestTask == nil {
+				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
+			}
+
+			time.Sleep(10 * time.Second)
 		}
 
+		// Check the status
+		if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+			return nil, NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
+		}
+	}
+
+	// Finnaly get the host component
+	hostComponent, err = c.HostComponent(hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
+	if err != nil {
+		return nil, err
 	}
 
 	return hostComponent, nil
@@ -162,6 +193,53 @@ func (c *AmbariClient) UpdateHostComponent(hostComponent *HostComponent) (*HostC
 
 }
 
+// SendRequestHostComponent permit to start / stop host component on ambari with message displayed on operation task in Ambari UI
+// It keep only State field when it send the request
+// It return RequestTask if all work fine
+// It return nil if no request is created
+// It return error if something wrong when it call the API
+func (c *AmbariClient) SendRequestHostComponent(request *Request) (*RequestTask, error) {
+
+	if request == nil {
+		panic("Request can't be nil")
+	}
+	log.Debug("Request: ", request)
+	hostComponent := request.Body.(*HostComponent)
+	hostComponentTemp := &HostComponent{
+		HostComponentInfo: &HostComponentInfo{
+			State: hostComponent.HostComponentInfo.State,
+		},
+	}
+	request.Body = hostComponentTemp
+
+	log.Debug("Sended Request: ", request)
+
+	path := fmt.Sprintf("/clusters/%s/hosts/%s/host_components/%s", hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.Client().R().SetBody(jsonData).Put(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Response when send request: ", resp)
+	if resp.StatusCode() >= 300 {
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+	}
+	if len(resp.Body()) == 0 {
+		return nil, nil
+	}
+	requestTask := &RequestTask{}
+	err = json.Unmarshal(resp.Body(), requestTask)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Return request: %s", requestTask)
+
+	return requestTask, err
+}
+
 // StopHostComponent permit to stop component on host
 // It return the HostComponent
 // Not wait that host component is stopped if service is in maintenance state or if host is in maintenance state, because it can't stop it
@@ -198,33 +276,41 @@ func (c *AmbariClient) StopHostComponent(clusterName string, hostname string, co
 
 	// Update the host components
 	hostComponent.HostComponentInfo.State = SERVICE_STOPPED
-	hostComponent, err = c.UpdateHostComponent(hostComponent)
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: fmt.Sprintf("Stop component %s on %s from API", componentName, hostname),
+		},
+		Body: hostComponent,
+	}
+	requestTask, err := c.SendRequestHostComponent(request)
 	if err != nil {
 		return nil, err
-	}
-	// Check if it can stop the component
-	service, err := c.Service(clusterName, hostComponent.HostComponentInfo.ServiceName)
-	if err != nil {
-		return nil, err
-	}
-	if service == nil {
-		return nil, NewAmbariError(404, "Service %s not found in cluster %s", hostComponent.HostComponentInfo.ServiceName, clusterName)
 	}
 
-	host, err := c.HostOnCluster(clusterName, hostComponent.HostComponentInfo.Hostname)
-	if err != nil {
-		return nil, err
-	}
-	if host == nil {
-		return nil, NewAmbariError(404, "Host %s not found in cluster %s", hostComponent.HostComponentInfo.Hostname, clusterName)
-	}
+	if requestTask != nil {
+		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
 
-	for service.ServiceInfo.MaintenanceState == MAINTENANCE_STATE_OFF && host.HostInfo.MaintenanceState == MAINTENANCE_STATE_OFF && hostComponent.HostComponentInfo.State != SERVICE_STOPPED {
-		time.Sleep(5 * time.Second)
-		hostComponent, err = c.HostComponent(hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
-		if err != nil {
-			return nil, err
+			requestTask, err = c.Request(clusterName, requestTask.RequestTaskInfo.Id)
+			if err != nil {
+				return nil, err
+			}
+			if requestTask == nil {
+				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
+			}
+
+			time.Sleep(10 * time.Second)
 		}
+
+		// Check the status
+		if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+			return nil, NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
+		}
+	}
+
+	// Finnaly get the host component
+	hostComponent, err = c.HostComponent(clusterName, hostname, componentName)
+	if err != nil {
+		return nil, err
 	}
 
 	return hostComponent, nil
@@ -273,41 +359,50 @@ func (c *AmbariClient) StartHostComponent(clusterName string, hostname string, c
 	if component == nil {
 		return nil, NewAmbariError(404, "Component %s not found in service %s on cluster %s", componentName, hostComponent.HostComponentInfo.ServiceName, clusterName)
 	}
-	if component.ServiceComponentInfo.Category == COMPONENT_CLIENT {
+	if component.ComponentInfo.Category == COMPONENT_CLIENT {
 		log.Debugf("Component %s is client, it can't start", componentName)
 		return hostComponent, nil
 	}
 
 	// Update the host components
 	hostComponent.HostComponentInfo.State = SERVICE_STARTED
-	hostComponent, err = c.UpdateHostComponent(hostComponent)
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: fmt.Sprintf("Start component %s on %s from API", componentName, hostname),
+		},
+		Body: hostComponent,
+	}
+	requestTask, err := c.SendRequestHostComponent(request)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if it can start the component
-	service, err := c.Service(clusterName, hostComponent.HostComponentInfo.ServiceName)
-	if err != nil {
-		return nil, err
-	}
-	if service == nil {
-		return nil, NewAmbariError(404, "Service %s not found in cluster %s", hostComponent.HostComponentInfo.ServiceName, clusterName)
-	}
+	if requestTask != nil {
+		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
 
-	host, err := c.HostOnCluster(clusterName, hostComponent.HostComponentInfo.Hostname)
-	if err != nil {
-		return nil, err
-	}
-	if host == nil {
-		return nil, NewAmbariError(404, "Host %s not found in cluster %s", hostComponent.HostComponentInfo.Hostname, clusterName)
-	}
-	for service.ServiceInfo.MaintenanceState == MAINTENANCE_STATE_OFF && host.HostInfo.MaintenanceState == MAINTENANCE_STATE_OFF && hostComponent.HostComponentInfo.State != SERVICE_STARTED {
-		time.Sleep(5 * time.Second)
-		hostComponent, err = c.HostComponent(hostComponent.HostComponentInfo.ClusterName, hostComponent.HostComponentInfo.Hostname, hostComponent.HostComponentInfo.ComponentName)
-		if err != nil {
-			return nil, err
+			requestTask, err = c.Request(clusterName, requestTask.RequestTaskInfo.Id)
+			if err != nil {
+				return nil, err
+			}
+			if requestTask == nil {
+				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
+			}
+
+			time.Sleep(10 * time.Second)
+		}
+
+		// Check the status
+		if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+			return nil, NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
 		}
 	}
+
+	// Finnaly get the host component
+	hostComponent, err = c.HostComponent(clusterName, hostname, componentName)
+	if err != nil {
+		return nil, err
+	}
+
 	return hostComponent, nil
 }
 

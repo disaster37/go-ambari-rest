@@ -240,6 +240,44 @@ func main() {
 			},
 			Action: startAllComponentsInHost,
 		},
+		{
+			Name:  "start-component-in-host",
+			Usage: "Start component in host and wait component are started",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to start component",
+				},
+				cli.StringFlag{
+					Name:  "hostname",
+					Usage: "The hostname where to start component",
+				},
+				cli.StringFlag{
+					Name:  "component-name",
+					Usage: "The component name to start",
+				},
+			},
+			Action: startComponentInHost,
+		},
+		{
+			Name:  "stop-component-in-host",
+			Usage: "Stop component in host and wait component are stopped",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to stop component",
+				},
+				cli.StringFlag{
+					Name:  "hostname",
+					Usage: "The hostname where to stop component",
+				},
+				cli.StringFlag{
+					Name:  "component-name",
+					Usage: "The component name to stop",
+				},
+			},
+			Action: stopComponentInHost,
+		},
 	}
 
 	app.Run(os.Args)

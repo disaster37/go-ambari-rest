@@ -119,3 +119,75 @@ func startAllComponentsInHost(c *cli.Context) error {
 
 	return nil
 }
+
+func startComponentInHost(c *cli.Context) error {
+
+	clientAmbari, err := manageGlobalParameters()
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if c.String("cluster-name") == "" {
+		return cli.NewExitError("You must set cluster-name parameter", 1)
+	}
+	if c.String("hostname") == "" {
+		return cli.NewExitError("You must set hostname parameter", 1)
+	}
+	if c.String("component-name") == "" {
+		return cli.NewExitError("You must set component-name parameter", 1)
+	}
+
+	// Get the host
+	host, err := clientAmbari.HostOnCluster(c.String("cluster-name"), c.String("hostname"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if host == nil {
+		return cli.NewExitError(client.NewAmbariError(404, "Host %s not found", c.String("hostname")), 1)
+	}
+
+	// Start component
+	_, err = clientAmbari.StartHostComponent(c.String("cluster-name"), c.String("hostname"), c.String("component-name"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	log.Infof("Successfully start component %s on host %s", c.String("hostname"), c.String("component-name"))
+
+	return nil
+}
+
+func stopComponentInHost(c *cli.Context) error {
+
+	clientAmbari, err := manageGlobalParameters()
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if c.String("cluster-name") == "" {
+		return cli.NewExitError("You must set cluster-name parameter", 1)
+	}
+	if c.String("hostname") == "" {
+		return cli.NewExitError("You must set hostname parameter", 1)
+	}
+	if c.String("component-name") == "" {
+		return cli.NewExitError("You must set component-name parameter", 1)
+	}
+
+	// Get the host
+	host, err := clientAmbari.HostOnCluster(c.String("cluster-name"), c.String("hostname"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+	if host == nil {
+		return cli.NewExitError(client.NewAmbariError(404, "Host %s not found", c.String("hostname")), 1)
+	}
+
+	// Stop component
+	_, err = clientAmbari.StopHostComponent(c.String("cluster-name"), c.String("hostname"), c.String("component-name"))
+	if err != nil {
+		return cli.NewExitError(err, 1)
+	}
+
+	log.Infof("Successfully stop component %s on host %s", c.String("hostname"), c.String("component-name"))
+
+	return nil
+}

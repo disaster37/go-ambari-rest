@@ -1,20 +1,35 @@
 # go-amabri-rest
 Rest client for Ambari API in Golang
-
-https://cwiki.apache.org/confluence/display/AMBARI/Add+a+host+and+deploy+components+using+APIs
-https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/update-hostcomponent.md
+It provide cli and library
 
 
-## Use case
+All development is base on the following documentation:
+- https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/index.md
+- https://github.com/apache/ambari/blob/trunk/ambari-server/docs/api/v1/update-hostcomponent.md
 
-### Affect new component to host
 
-- You need to create cluster
-- You need to affect host on cluster
-- You need to create the service
-- You need to create the component on service
-- You need to create configuration for the service
-- You need to affect component on host
+## Contribute
+
+
+You PR are always welcome. Please use develop branch to do PR (git flow pattern)
+Don't forget to add test if you add some functionalities.
+
+To build, you can use the following command line:
+```sh
+make build
+```
+
+To lauch golang test, you can use the folowing command line:
+```sh
+make test-api
+```
+
+To lauch cli test, you can use the following command line:
+```sh
+make test-cli
+```
+
+
 
 
 ## CLI
@@ -72,7 +87,7 @@ Sample of `repository.json`:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin create-or-update-repository --repository-file repository.json
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin create-or-update-repository --repository-file repository.json
 ```
 
 ### Create cluster if not exist
@@ -678,7 +693,7 @@ Sample of host-template.json
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin create-cluster-if-not-exist --cluster-name my_cluster --blueprint-file blueprint.json --hosts-template-file host-template.json
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin create-cluster-if-not-exist --cluster-name my_cluster --blueprint-file blueprint.json --hosts-template-file host-template.json
 ```
 
 ### Create or update privileges
@@ -710,7 +725,7 @@ Sample of `privileges.json`:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin create-or-update-privileges --privileges-file privileges.json
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin create-or-update-privileges --privileges-file privileges.json
 ```
 
 ### Add new node in existing cluster deployed with Blueprint API
@@ -727,7 +742,7 @@ it has the following parameters:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin add-host-in-cluster --cluster-name test --blueprint-name test --hostname "node10.domain.com" --role worker --rack "dc1/r1"
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin add-host-in-cluster --cluster-name test --blueprint-name test --hostname "node10.domain.com" --role worker --rack "dc1/r1"
 ```
 
 ### Stop one service
@@ -742,7 +757,7 @@ it has the following parameters:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin stop-service --cluster-name test --service-name HBASE --enable-maintenance --force
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin stop-service --cluster-name test --service-name HBASE --enable-maintenance --force
 ```
 
 ### Start one service
@@ -756,7 +771,7 @@ it has the following parameters:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin start-service --cluster-name test --service-name HBASE --disable-maintenance
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin start-service --cluster-name test --service-name HBASE --disable-maintenance
 ```
 
 ### Stop all services in cluster
@@ -770,7 +785,7 @@ it has the following parameters:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin stop-all-services --cluster-name test --enable-maintenance --force
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin stop-all-services --cluster-name test --enable-maintenance --force
 ```
 
 ### Start all services in cluster
@@ -783,7 +798,7 @@ it has the following parameters:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin start-all-services --cluster-name test --disable-maintenance
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin start-all-services --cluster-name test --disable-maintenance
 ```
 
 
@@ -799,7 +814,7 @@ it has the following parameters:
 
 Sample of how to use this command line
 ```sh
-./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin stop-all-components-in-host --cluster-name test --hostname worker01.domain.com --enable-maintenance --force
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin stop-all-components-in-host --cluster-name test --hostname worker01.domain.com --enable-maintenance --force
 ```
 
 ### Start all components on node
@@ -814,4 +829,32 @@ it has the following parameters:
 Sample of how to use this command line
 ```sh
 ./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443 --ambari-login admin --ambari-password admin start-all-components-in-host --cluster-name test --hostname worker01.domain.com --disable-maintenance
+```
+
+### Stop one component on node
+
+This command line permit to stop one component on particular node.
+it has the following parameters:
+- **--cluster-name**: The HDP cluster name
+- **--hostname**: The node where you should to stop component. Per default, it's the FQDN.
+- **--component-name**: The component you should to stop.
+
+
+Sample of how to use this command line
+```sh
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin stop-component-in-host --cluster-name test --hostname worker01.domain.com --component-name ZOOKEEPER_SERVER
+```
+
+### Start one component on node
+
+This command line permit to start one component on particular node.
+it has the following parameters:
+- **--cluster-name**: The HDP cluster name
+- **--hostname**: The node where you should to start component. Per default, it's the FQDN.
+- **--component-name**: The component you should to start.
+
+
+Sample of how to use this command line
+```sh
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin start-component-in-host --cluster-name test --hostname worker01.domain.com --component-name ZOOKEEPER_SERVER
 ```

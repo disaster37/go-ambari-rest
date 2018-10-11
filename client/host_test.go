@@ -2,11 +2,9 @@ package client
 
 import (
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"time"
 )
 
-// Test the constructor
 func (s *ClientTestSuite) TestHost() {
 
 	//Wait some time that host join after cluster deletion
@@ -74,28 +72,12 @@ func (s *ClientTestSuite) TestHost() {
 		assert.NoError(s.T(), err)
 	}
 
-	// Create blueprint
-	b, err := ioutil.ReadFile("../fixtures/blueprint.json")
-	if err != nil {
-		panic(err)
-	}
-	blueprintJson := string(b)
-	_, err = s.client.CreateBlueprint("testHost", blueprintJson)
-	if err != nil {
-		panic(err)
-	}
-	//Create cluster from template
-	b, err = ioutil.ReadFile("../fixtures/cluster-template.json")
-	if err != nil {
-		panic(err)
-	}
-	templateJson := string(b)
-
-	_, err = s.client.CreateClusterFromTemplate("testHost", templateJson)
-	if err != nil {
-		panic(err)
-	}
-	_, err = s.client.RegisterHostOnCluster("testHost", "ambari-agent3", "testHost", "host_group_1")
+	// Affext new host on cluster with specific role
+	host, err = s.client.RegisterHostOnCluster("test", "ambari-agent3", "test", "host_group_2")
 	assert.NoError(s.T(), err)
-
+	assert.NotNil(s.T(), host)
+	if host != nil {
+		assert.Equal(s.T(), "test", host.HostInfo.ClusterName)
+		assert.Equal(s.T(), "ambari-agent3", host.HostInfo.Hostname)
+	}
 }

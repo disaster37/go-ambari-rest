@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 )
 
-// Test the constructor
 func (s *ClientTestSuite) TestBlueprint() {
 
 	// Create blueprint
@@ -15,11 +14,11 @@ func (s *ClientTestSuite) TestBlueprint() {
 	}
 	blueprintJson := string(b)
 
-	blueprint, err := s.client.CreateBlueprint("test", blueprintJson)
+	blueprint, err := s.client.CreateBlueprint("testBlueprint", blueprintJson)
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), blueprint)
 	if blueprint != nil {
-		assert.Equal(s.T(), "test", blueprint.BlueprintInfo.Name)
+		assert.Equal(s.T(), "testBlueprint", blueprint.BlueprintInfo.Name)
 		assert.Equal(s.T(), "HDP", blueprint.BlueprintInfo.Stack)
 		assert.Equal(s.T(), "2.6", blueprint.BlueprintInfo.Version)
 		assert.Equal(s.T(), 0, len(blueprint.Configurations))
@@ -27,11 +26,11 @@ func (s *ClientTestSuite) TestBlueprint() {
 	}
 
 	// Get blueprint
-	blueprint, err = s.client.Blueprint("test")
+	blueprint, err = s.client.Blueprint("testBlueprint")
 	assert.NoError(s.T(), err)
 	assert.NotNil(s.T(), blueprint)
 	if blueprint != nil {
-		assert.Equal(s.T(), "test", blueprint.BlueprintInfo.Name)
+		assert.Equal(s.T(), "testBlueprint", blueprint.BlueprintInfo.Name)
 		assert.Equal(s.T(), "HDP", blueprint.BlueprintInfo.Stack)
 		assert.Equal(s.T(), "2.6", blueprint.BlueprintInfo.Version)
 	}
@@ -39,9 +38,9 @@ func (s *ClientTestSuite) TestBlueprint() {
 	assert.NoError(s.T(), err)
 
 	// Delete blueprint
-	err = s.client.DeleteBlueprint("test")
+	err = s.client.DeleteBlueprint("testBlueprint")
 	assert.NoError(s.T(), err)
-	blueprint, err = s.client.Blueprint("test")
+	blueprint, err = s.client.Blueprint("testBlueprint")
 	assert.NoError(s.T(), err)
 	assert.Nil(s.T(), blueprint)
 }

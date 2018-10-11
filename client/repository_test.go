@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Test the constructor
 func (s *ClientTestSuite) TestRepository() {
 
 	// Create repository
