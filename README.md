@@ -10,7 +10,6 @@ All development is base on the following documentation:
 
 ## Contribute
 
-
 You PR are always welcome. Please use develop branch to do PR (git flow pattern)
 Don't forget to add test if you add some functionalities.
 
