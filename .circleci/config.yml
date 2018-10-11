@@ -6,6 +6,12 @@ jobs:
   test:
     docker:
       - image: circleci/golang:1.11
+      - image: postgres:9.6
+        name: db
+        environment:
+          POSTGRES_DB: ambari
+          POSTGRES_PASSWORD: ambari
+          POSTGRES_USER: ambari
       - image: webcenter/ambari-server:latest
         name: ambari-server
       - image: webcenter/ambari-agent:latest
