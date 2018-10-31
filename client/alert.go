@@ -22,6 +22,7 @@ type AlertInfo struct {
 	MaintenanceState string `json:"maintenance_state,omitempty"`
 	State            string `json:"state,omitempty"`
 	Text             string `json:"text,omitempty"`
+	Scope            string `json:"scope,omitempty"`
 }
 
 type Alerts struct {
