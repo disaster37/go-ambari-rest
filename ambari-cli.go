@@ -4,6 +4,7 @@ import (
 	"github.com/disaster37/go-ambari-rest/client"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli/altsrc"
 	prefixed "github.com/x-cray/logrus-prefixed-formatter"
 	"gopkg.in/urfave/cli.v1"
 	"os"
@@ -29,20 +30,27 @@ func main() {
 	app.Version = "develop"
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
+			Name:  "config",
+			Usage: "Load configuration from `FILE`",
+		},
+		altsrc.NewStringFlag(cli.StringFlag{
 			Name:        "ambari-url",
 			Usage:       "The Ambari base URL (with api version)",
+			EnvVar:      "AMBARI_URL",
 			Destination: &ambariURL,
-		},
-		cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
 			Name:        "ambari-login",
 			Usage:       "The Ambari admin login",
+			EnvVar:      "AMBARI_LOGIN",
 			Destination: &ambariLogin,
-		},
-		cli.StringFlag{
+		}),
+		altsrc.NewStringFlag(cli.StringFlag{
 			Name:        "ambari-password",
 			Usage:       "The Ambari admin password",
+			EnvVar:      "AMBARI_PASSWORD",
 			Destination: &ambariPassword,
-		},
+		}),
 		cli.BoolFlag{
 			Name:        "debug",
 			Usage:       "Display debug output",
@@ -280,7 +288,18 @@ func main() {
 		},
 	}
 
-	app.Run(os.Args)
+	app.Before = func(c *cli.Context) error {
+		if c.String("config") != "" {
+			before := altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewYamlSourceFromFlagFunc("config"))
+			return before(c)
+		}
+		return nil
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Check the global parameter

@@ -36,11 +36,20 @@ make test-cli
 ### Global options
 
 The following parameters are available for all commands line :
-- **--ambari-url**: The Ambari URL. For exemple https://srv1:8443
-- **--ambari-login**: The Ambari login to connect on Ambari API
-- **--ambari-password**: The Ambari password to connect on Ambari API
+- **--ambari-url**: The Ambari URL. For exemple https://srv1:8443. Alternatively you can use environment variable `AMBARI_URL`.
+- **--ambari-login**: The Ambari login to connect on Ambari API. Alternatively you can use environment variable `AMBARI_LOGIN`.
+- **--ambari-password**: The Ambari password to connect on Ambari API. Alternatively you can use environment variable `AMBARI_PASSWORD`.
 - **--debug**: Enable the debug mode
 - **--help**: Display help for the current command
+
+
+You can set also this parameters on yaml file (one or all) and use the parameters `--config` with the path of your Yaml file.
+```yaml
+---
+ambari-url: https://ambari.company.com
+ambari-login: admin
+ambari-password: admin
+```
 
 ### Create or update repository
 
