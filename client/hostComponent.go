@@ -15,12 +15,14 @@ type HostComponent struct {
 	HostComponentInfo *HostComponentInfo `json:"HostRoles"`
 }
 type HostComponentInfo struct {
-	ClusterName   string `json:"cluster_name,omitempty"`
-	ComponentName string `json:"component_name,omitempty"`
-	Hostname      string `json:"host_name,omitempty"`
-	State         string `json:"state,omitempty"`
-	DesiredState  string `json:"desired_state,omitempty"`
-	ServiceName   string `json:"service_name,omitempty"`
+	ClusterName   string                 `json:"cluster_name,omitempty"`
+	ComponentName string                 `json:"component_name,omitempty"`
+	Hostname      string                 `json:"host_name,omitempty"`
+	State         string                 `json:"state,omitempty"`
+	DesiredState  string                 `json:"desired_state,omitempty"`
+	ServiceName   string                 `json:"service_name,omitempty"`
+	HaState       string                 `json:"ha_state,omitempty"`
+	Metrics       map[string]interface{} `json:"metrics,omitempty"`
 }
 
 func (h *HostComponent) CleanBeforeSave() {
