@@ -6,10 +6,18 @@ services:
       POSTGRES_DB: ambari
       POSTGRES_PASSWORD: ambari
       POSTGRES_USER: ambari
+  freeipa:
+    image: freeipa/freeipa-server
+    sysctls:
+      net.ipv6.conf.all.disable_ipv6: 0
+    command: -U -p adminadmin -a adminadmin -n test.local -r TEST.LOCAL
+    tty: true
+    hostname: pdc.test.local
   ambari-server:
     image: webcenter/ambari-server:latest
     links:
       - postgres:db
+      - freeipa:pdc.test.local
     hostname: ambari-server
     ports:
       - 80:8080/tcp

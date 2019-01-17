@@ -11,20 +11,30 @@ import (
 
 // Cluster item
 type Cluster struct {
-	ClusterInfo    *ClusterInfo             `json:"Clusters"`
-	Services       []Service                `json:"services,omitempty"`
-	DesiredConfigs map[string]Configuration `json:"desired_config,omitempty"`
+	ClusterInfo       *ClusterInfo                 `json:"Clusters"`
+	Services          []Service                    `json:"services,omitempty"`
+	DesiredConfigs    map[string]Configuration     `json:"desired_config,omitempty"`
+	SessionAttributes map[string]map[string]string `json:"session_attributes,omitempty"`
 }
 type ClusterInfo struct {
-	ClusterId   int64  `json:"cluster_id,omitempty"`
-	ClusterName string `json:"cluster_name"`
-	Version     string `json:"version,omitempty"`
+	ClusterId    int64  `json:"cluster_id,omitempty"`
+	ClusterName  string `json:"cluster_name"`
+	Version      string `json:"version,omitempty"`
+	SecurityType string `json:"security_type,omitempty"`
 }
 
 // String permit to return cluster object as Json string
 func (c *Cluster) String() string {
 	json, _ := json.Marshal(c)
 	return string(json)
+}
+
+func (c *Cluster) CleanBeforeSave() {
+	c.Services = nil
+	c.ClusterInfo = &ClusterInfo{
+		SecurityType: c.ClusterInfo.SecurityType,
+		ClusterName:  c.ClusterInfo.ClusterName,
+	}
 }
 
 // Create cluster eprmit to create new HDP cluster on Ambari
@@ -144,7 +154,7 @@ func (c *AmbariClient) Cluster(clusterName string) (*Cluster, error) {
 // So we need to have the old cluster name is the goal to rename it.
 // It return cluster if all right fine
 // It return error if something wrong when it call the API
-func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*Cluster, error) {
+func (c *AmbariClient) RenameCluster(oldClusterName string, cluster *Cluster) (*Cluster, error) {
 
 	if oldClusterName == "" {
 		panic("OldClusterName can't be nil")
@@ -162,6 +172,48 @@ func (c *AmbariClient) UpdateCluster(oldClusterName string, cluster *Cluster) (*
 			ClusterName: cluster.ClusterInfo.ClusterName,
 		},
 	}
+	jsonData, err := json.Marshal(cluster)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.Client().R().SetBody(jsonData).Put(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Response to update: ", resp)
+	if resp.StatusCode() >= 300 {
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+	}
+
+	// Get the cluster
+	cluster, err = c.Cluster(cluster.ClusterInfo.ClusterName)
+	if err != nil {
+		return nil, err
+	}
+	if cluster == nil {
+		return nil, NewAmbariError(500, "Can't get cluster that just updated")
+	}
+
+	log.Debug("Cluster: ", cluster)
+
+	return cluster, err
+
+}
+
+// Ambari not support to manage cluster by ID. We need to use clusterName instead.
+// It return cluster if all right fine
+// It return error if something wrong when it call the API
+func (c *AmbariClient) UpdateCluster(cluster *Cluster) (*Cluster, error) {
+
+	if cluster == nil {
+		panic("Cluster can't be nil")
+	}
+	log.Debug("Cluster: ", cluster)
+
+	// Update the Cluster
+	path := fmt.Sprintf("/clusters/%s", cluster.ClusterInfo.ClusterName)
+	cluster.CleanBeforeSave()
+	log.Debug("Cluster payload: ", cluster)
 	jsonData, err := json.Marshal(cluster)
 	if err != nil {
 		return nil, err
