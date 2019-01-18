@@ -301,21 +301,18 @@ func addKerberos(c *cli.Context) error {
 			"password":  c.String("principal-password"),
 		},
 	}
-	cluster, err = clientAmbari.UpdateCluster(cluster)
+	cluster, err = clientAmbari.ManageKerberosOnCluster(cluster)
 	if err != nil {
 		return err
 	}
 	log.Info("Kerberos is enabled")
 
-	/*
-
-		// Start all services
-		err = clientAmbari.StartAllServices(cluster, false)
-		if err != nil {
-			return err
-		}
-		log.Info("All services are started")
-	*/
+	// Start all services
+	err = clientAmbari.StartAllServices(cluster, false)
+	if err != nil {
+		return err
+	}
+	log.Info("All services are started")
 
 	return nil
 

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 // Cluster item
@@ -203,40 +204,55 @@ func (c *AmbariClient) RenameCluster(oldClusterName string, cluster *Cluster) (*
 // Ambari not support to manage cluster by ID. We need to use clusterName instead.
 // It return cluster if all right fine
 // It return error if something wrong when it call the API
-func (c *AmbariClient) UpdateCluster(cluster *Cluster) (*Cluster, error) {
+func (c *AmbariClient) ManageKerberosOnCluster(cluster *Cluster) (*Cluster, error) {
 
 	if cluster == nil {
 		panic("Cluster can't be nil")
 	}
 	log.Debug("Cluster: ", cluster)
 
-	// Update the Cluster
-	path := fmt.Sprintf("/clusters/%s", cluster.ClusterInfo.ClusterName)
-	cluster.CleanBeforeSave()
-	log.Debug("Cluster payload: ", cluster)
-	jsonData, err := json.Marshal(cluster)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.Client().R().SetBody(jsonData).Put(path)
-	if err != nil {
-		return nil, err
-	}
-	log.Debug("Response to update: ", resp)
-	if resp.StatusCode() >= 300 {
-		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+	context := "Disable kerberos from API"
+	if cluster.ClusterInfo.SecurityType == "KERBEROS" {
+		context = "Enable kerberos from API"
 	}
 
-	// Get the cluster
+	request := &Request{
+		RequestInfo: &RequestInfo{
+			Context: context,
+		},
+		Body: cluster,
+	}
+	requestTask, err := c.SendRequestCluster(request)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wait the end of the request if request has been created
+	if requestTask != nil {
+		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
+
+			requestTask, err = c.Request(cluster.ClusterInfo.ClusterName, requestTask.RequestTaskInfo.Id)
+			if err != nil {
+				return nil, err
+			}
+			if requestTask == nil {
+				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
+			}
+
+			time.Sleep(10 * time.Second)
+		}
+
+		// Check the status
+		if requestTask.RequestTaskInfo.Status != REQUEST_COMPLETED {
+			return nil, NewAmbariError(500, "Request %d failed with status %s, task completed %d, task aborded %d, task failed %d", requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.CompletedTask, requestTask.RequestTaskInfo.AbordedTask, requestTask.RequestTaskInfo.FailedTask)
+		}
+	}
+
+	// Finnaly get the cluster
 	cluster, err = c.Cluster(cluster.ClusterInfo.ClusterName)
 	if err != nil {
 		return nil, err
 	}
-	if cluster == nil {
-		return nil, NewAmbariError(500, "Can't get cluster that just updated")
-	}
-
-	log.Debug("Cluster: ", cluster)
 
 	return cluster, err
 
@@ -298,5 +314,55 @@ func (c *AmbariClient) DeleteCluster(clusterName string) error {
 	}
 
 	return nil
+
+}
+
+// SendRequestCluster permit to start / stop service on ambari with message displayed on operation task in Ambari UI
+// It keep only Kerberos field when it send the request
+// It return RequestTask if all work fine
+// It return nil if no request is created
+// It return error if something wrong when it call the API
+func (c *AmbariClient) SendRequestCluster(request *Request) (*RequestTask, error) {
+
+	if request == nil {
+		panic("Request can't be nil")
+	}
+	log.Debug("Request: ", request)
+	cluster := request.Body.(*Cluster)
+	clusterTemp := &Cluster{
+		ClusterInfo: &ClusterInfo{
+			SecurityType: cluster.ClusterInfo.SecurityType,
+			ClusterName:  cluster.ClusterInfo.ClusterName,
+		},
+		SessionAttributes: cluster.SessionAttributes,
+	}
+	request.Body = clusterTemp
+
+	log.Debug("Sended Request: ", request)
+
+	path := fmt.Sprintf("/clusters/%s", cluster.ClusterInfo.ClusterName)
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := c.Client().R().SetBody(jsonData).Put(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Response when send request: ", resp)
+	if resp.StatusCode() >= 300 {
+		return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+	}
+	if len(resp.Body()) == 0 {
+		return nil, nil
+	}
+	requestTask := &RequestTask{}
+	err = json.Unmarshal(resp.Body(), requestTask)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Return request: %s", requestTask)
+
+	return requestTask, err
 
 }
