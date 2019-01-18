@@ -10,9 +10,15 @@ services:
     image: freeipa/freeipa-server
     sysctls:
       net.ipv6.conf.all.disable_ipv6: 0
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
     command: -U -p adminadmin -a adminadmin -n test.local -r TEST.LOCAL
     tty: true
     hostname: pdc.test.local
+    domainname: test.local
   ambari-server:
     image: webcenter/ambari-server:latest
     links:
@@ -59,6 +65,7 @@ services:
     environment:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
+
   build:
     image: golang:1.11
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
@@ -72,6 +79,7 @@ services:
     image: appropriate/curl:latest
     links:
       - ambari-server:ambari-server
+
   cli:
     image: debian:latest
     volumes:

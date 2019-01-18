@@ -52,4 +52,7 @@ func (s *ClientTestSuite) TestCluster() {
 	// Create cluster with blueprint and delete them
 	// It's already tested on client_test to create fresh cluster
 
+	// Manage kerberos on cluster
+	// We test it with cli test. It' not easy to test directly.
+
 }
