@@ -758,7 +758,7 @@ Sample of how to use this command line
 This command line permit to setup Kerberos.
 it has the following parameters:
 - **--cluster-name**: The HDP cluster name
-- **--kdc**: The kdc type to use (active-directory, mit-kdc or ipa) (default: "active-directory")
+- **--kdc-type**: The kdc type to use (active-directory, mit-kdc or ipa) (default: "active-directory")
 - **--disable-manage-identities**: Manage Kerberos principals and keytabs manually
 - **--kdc-hosts**: A comma separated list of KDC host. Optionnaly a port number may be included
 - **--realm**: The default realm to use when creating service principal

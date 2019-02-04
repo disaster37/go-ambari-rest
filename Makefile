@@ -28,7 +28,7 @@ test-cli: clean init
 	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-cluster-if-not-exist --cluster-name test --blueprint-file /workspace/fixtures/blueprint.json --hosts-template-file /workspace/fixtures/cluster-template.json
 	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-cluster-if-not-exist --cluster-name test --blueprint-file /workspace/fixtures/blueprint.json --hosts-template-file /workspace/fixtures/cluster-template.json
 	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-or-update-privileges --privileges-file /workspace/fixtures/privileges.json
-	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin create-or-update-privileges --privileges-file /workspace/fixtures/privileges.json
+	${SUDO_DOCKER} docker-compose run --rm cli --ambari-url http://ambari-server:8080/api/v1 --ambari-login admin --ambari-password admin --debug configure-kerberos --cluster-name "test" --kdc-type "mit-kdc" --kdc-hosts "kdc.test.local" --realm "TEST.LOCAL" --admin-server-host "kdc.test.local" --principal-name "admin/admin@TEST.LOCAL" --principal-password "adminadmin" --domains "test.local,.test.local"
 
 test: test-api test-cli
 

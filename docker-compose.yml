@@ -6,31 +6,28 @@ services:
       POSTGRES_DB: ambari
       POSTGRES_PASSWORD: ambari
       POSTGRES_USER: ambari
-  freeipa:
-    image: freeipa/freeipa-server
-    sysctls:
-      net.ipv6.conf.all.disable_ipv6: 0
-    tmpfs:
-      - /run
-      - /tmp
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    command: -U -p adminadmin -a adminadmin -n test.local -r TEST.LOCAL
+  kerberos:
+    image: sequenceiq/kerberos
     tty: true
-    hostname: pdc.test.local
+    hostname: kdc
     domainname: test.local
+    environment:
+      REALM: TEST.LOCAL
+      DOMAIN_REALM: test.local
+      KERB_ADMIN_PASS: adminadmin
+      SEARCH_DOMAINS: .test.local,test.local
   ambari-server:
     image: webcenter/ambari-server:latest
     links:
       - postgres:db
-      - freeipa:pdc.test.local
-    hostname: ambari-server
+      - kerberos:kdc.test.local
     ports:
-      - 80:8080/tcp
+      - 8080:8080/tcp
   ambari-agent:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
+      - kerberos:kdc.test.local
     hostname: ambari-agent
     environment:
       http_proxy: ${http_proxy}
@@ -39,6 +36,7 @@ services:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
+      - kerberos:kdc.test.local
     hostname: ambari-agent2
     environment:
       http_proxy: ${http_proxy}
@@ -47,6 +45,7 @@ services:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
+      - kerberos:kdc.test.local
     hostname: ambari-agent3
     environment:
       http_proxy: ${http_proxy}
