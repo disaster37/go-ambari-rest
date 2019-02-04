@@ -753,6 +753,49 @@ Sample of how to use this command line
 ./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin add-host-in-cluster --cluster-name test --blueprint-name test --hostname "node10.domain.com" --role worker --rack "dc1/r1"
 ```
 
+### Enable / configure kerberos on HDP cluster
+
+This command line permit to setup Kerberos.
+it has the following parameters:
+- **--cluster-name**: The HDP cluster name
+- **--kdc-type**: The kdc type to use (active-directory, mit-kdc or ipa) (default: "active-directory")
+- **--disable-manage-identities**: Manage Kerberos principals and keytabs manually
+- **--kdc-hosts**: A comma separated list of KDC host. Optionnaly a port number may be included
+- **--realm**: The default realm to use when creating service principal
+- **--ldap-url**: The URL to Active Directory LDAP server. Only needed if the KDC type is Active Directory
+- **--container-dn**: The DN of the container used store service principals. Only needed if you use Active Directory
+- **--domains**: A comma separated list of domain names used to map server host names to the REALM name. It's optionnal
+- **--admin-server-host**: The host for KDC Kerberos administrative host. Optionnaly the port number can be included
+- **--principal-name**: Admin principal used to create principals and export keytabs
+- **--principal-password**: Admin principal password
+- **--persist-credential**: Store admin credential. Need to enable password encryption before that
+- **--disable-install-packages**: Disable the installation of Kerberos client package
+- **--executable-search-paths**: A comma delimited list of search paths used to find Kerberos utilities (default: "/usr/bin, /usr/kerberos/bin, /usr/sbin, /usr/lib/mit/bin, /usr/lib/mit/sbin")
+- **--encryption-type**: The supported list of session key encryption types that should be returned by the KDC (default: "aes des3-cbc-sha1 rc4 des-cbc-md5")
+- **--password-length**: The password length (default: 20)
+- **--password-min-lowercase-letters**: The minimal lowercase letters to compose password (default: 1)
+- **--password-min-uppercase-letters**: The minimal uppercase letters to compose password (default: 1)
+- **--password-min-digits**: The minimal digits to compose password (default: 1)
+- **--password-min-punctuation**: The minimal punctuation to compose password (default: 1)
+- **--password-min-whitespace**: The minimal whitespace to compose password (default: 0)
+- **--check-principal-name**: The principal name to use when executing Kerberos service check (default: "${cluster_name|toLower()}-${short_date}")
+- **--enable-case-insensitive-username-rules**: Force principal names to resolv to lowercase local usernames in auth-to-local rules
+- **--disable-manage-auth-to-local**: Don't manage the Hadoop auth-to-local rules by Ambari
+- **--disable-create-ambari-principal**: Don't create principal and keytab by Ambari
+- **--master-kdc-host**: The master KDC host in master/slave KDC deployment
+- **--preconfigure-services**: Preconfigure service. Possible value are NONE, DEFAULT or ALL. (default: "DEFAULT")
+- **--ad-create-attributes-template**: A velocity template to use when create service principals in Active Directory. (default: "\n{\n  \"objectClass\": [\"top\", \"person\", \"organizationalPerson\", \"user\"],\n  \"cn\": \"$principal_name\",\n  #if( $is_service )\n  \"servicePrincipalName\": \"$principal_name\",\n  #end\n  \"userPrincipalName\": \"$normalized_principal\",\n  \"unicodePwd\": \"$password\",\n  \"accountExpires\": \"0\",\n  \"userAccountControl\": \"66048\"\n}")
+- **--disable-manage-krb5-conf**: Don't manage krb5.conf by Ambari
+- **--krb5-conf-directory**: The krb5.conf coonfiguration directory (default: "/etc")
+- **--krb5-conf-template**: The krb5.conf template (default: "[libdefaults]\n  renew_lifetime = 7d\n  forwardable= true\n  default_realm = {{realm|upper()}}\n  ticket_lifetime = 24h\n  dns_lookup_realm = false\n  dns_lookup_kdc = false\n  #default_tgs_enctypes = {{encryption_types}}\n  #default_tkt_enctypes ={{encryption_types}}\n\n{% if domains %}\n[domain_realm]\n{% for domain in domains.split(',') %}\n  {{domain}} = {{realm|upper()}}\n{% endfor %}\n{%endif %}\n\n[logging]\n  default = FILE:/var/log/krb5kdc.log\nadmin_server = FILE:/var/log/kadmind.log\n  kdc = FILE:/var/log/krb5kdc.log\n\n[realms]\n  {{realm}} = {\n    admin_server = {{admin_server_host|default(kdc_host, True)}}\n    kdc = {{kdc_host}}\n }\n\n{# Append additional realm declarations below #}\n")
+
+
+Sample of how to use this command line
+It enable kerberos on Active Directory
+```sh
+./ambari-cli_linux_amd64 --ambari-url https://ambari-server:8443/api/v1 --ambari-login admin --ambari-password admin configure-kerberos --cluster-name "test" --kdc-hosts "dc.domain.com" --realm "DOMAIN.COM" --ldap-url "ldaps://dc.domain.com:636" --container-dn "OU=HDP,DC=DOMAIN,DC=COM" --admin-server-host "dc.domain.com" --principal-name "user@DOMAIN.COM" --principal-password "password" --persist-credential  --disable-manage-krb5-conf
+```
+
 ### Stop one service
 
 This command line permit to stop one service in HDP cluster.

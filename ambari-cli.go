@@ -286,6 +286,152 @@ func main() {
 			},
 			Action: stopComponentInHost,
 		},
+		{
+			Name:  "configure-kerberos",
+			Usage: "Install and configure Kerberos on HDP cluster",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "cluster-name",
+					Usage: "The cluster name where to enable kerberos",
+				},
+				cli.StringFlag{
+					Name:  "kdc-type",
+					Usage: "The kdc type to use (active-directory, mit-kdc or ipa)",
+					Value: "active-directory",
+				},
+				cli.BoolFlag{
+					Name:  "disable-manage-identities",
+					Usage: "Manage Kerberos principals and keytabs manually",
+				},
+
+				cli.StringFlag{
+					Name:  "kdc-hosts",
+					Usage: "A comma separated list of KDC host. Optionnaly a port number may be included",
+				},
+				cli.StringFlag{
+					Name:  "realm",
+					Usage: "The default realm to use when creating service principal",
+				},
+				cli.StringFlag{
+					Name:  "ldap-url",
+					Usage: "The URL to Active Directory LDAP server. Only needed if the KDC type is Active Directory",
+				},
+				cli.StringFlag{
+					Name:  "container-dn",
+					Usage: "The DN of the container used store service principals. Only needed if you use Active Directory",
+				},
+				cli.StringFlag{
+					Name:  "domains",
+					Usage: "A comma separated list of domain names used to map server host names to the REALM name. It's optionnal",
+				},
+				cli.StringFlag{
+					Name:  "admin-server-host",
+					Usage: "The host for KDC Kerberos administrative host. Optionnaly the port number can be included",
+				},
+				cli.StringFlag{
+					Name:  "principal-name",
+					Usage: "Admin principal used to create principals and export keytabs",
+				},
+				cli.StringFlag{
+					Name:  "principal-password",
+					Usage: "Admin principal password",
+				},
+				cli.BoolFlag{
+					Name:  "persist-credential",
+					Usage: "Store admin credential. Need to enable password encryption before that",
+				},
+				cli.BoolFlag{
+					Name:  "disable-install-packages",
+					Usage: "Disable the installation of Kerberos client package",
+				},
+				cli.StringFlag{
+					Name:  "executable-search-paths",
+					Usage: "A comma delimited list of search paths used to find Kerberos utilities",
+					Value: "/usr/bin, /usr/kerberos/bin, /usr/sbin, /usr/lib/mit/bin, /usr/lib/mit/sbin",
+				},
+				cli.StringFlag{
+					Name:  "encryption-type",
+					Usage: "The supported list of session key encryption types that should be returned by the KDC",
+					Value: "aes des3-cbc-sha1 rc4 des-cbc-md5",
+				},
+				cli.Int64Flag{
+					Name:  "password-length",
+					Usage: "The password length",
+					Value: 20,
+				},
+				cli.Int64Flag{
+					Name:  "password-min-lowercase-letters",
+					Usage: "The minimal lowercase letters to compose password",
+					Value: 1,
+				},
+				cli.Int64Flag{
+					Name:  "password-min-uppercase-letters",
+					Usage: "The minimal uppercase letters to compose password",
+					Value: 1,
+				},
+				cli.Int64Flag{
+					Name:  "password-min-digits",
+					Usage: "The minimal digits to compose password",
+					Value: 1,
+				},
+				cli.Int64Flag{
+					Name:  "password-min-punctuation",
+					Usage: "The minimal punctuation to compose password",
+					Value: 1,
+				},
+				cli.Int64Flag{
+					Name:  "password-min-whitespace",
+					Usage: "The minimal whitespace to compose password",
+					Value: 0,
+				},
+				cli.StringFlag{
+					Name:  "check-principal-name",
+					Usage: "The principal name to use when executing Kerberos service check",
+					Value: "${cluster_name|toLower()}-${short_date}",
+				},
+				cli.BoolFlag{
+					Name:  "enable-case-insensitive-username-rules",
+					Usage: "Force principal names to resolv to lowercase local usernames in auth-to-local rules",
+				},
+				cli.BoolFlag{
+					Name:  "disable-manage-auth-to-local",
+					Usage: "Don't manage the Hadoop auth-to-local rules by Ambari",
+				},
+				cli.BoolFlag{
+					Name:  "disable-create-ambari-principal",
+					Usage: "Don't create principal and keytab by Ambari",
+				},
+				cli.StringFlag{
+					Name:  "master-kdc-host",
+					Usage: "The master KDC host in master/slave KDC deployment",
+				},
+				cli.StringFlag{
+					Name:  "preconfigure-services",
+					Usage: "Preconfigure service. Possible value are NONE, DEFAULT or ALL.",
+					Value: "DEFAULT",
+				},
+				cli.StringFlag{
+					Name:  "ad-create-attributes-template",
+					Usage: "A velocity template to use when create service principals in Active Directory.",
+					Value: "\n{\n  \"objectClass\": [\"top\", \"person\", \"organizationalPerson\", \"user\"],\n  \"cn\": \"$principal_name\",\n  #if( $is_service )\n  \"servicePrincipalName\": \"$principal_name\",\n  #end\n  \"userPrincipalName\": \"$normalized_principal\",\n  \"unicodePwd\": \"$password\",\n  \"accountExpires\": \"0\",\n  \"userAccountControl\": \"66048\"\n}",
+				},
+				cli.BoolFlag{
+					Name:  "disable-manage-krb5-conf",
+					Usage: "Don't manage krb5.conf by Ambari",
+				},
+				cli.StringFlag{
+					Name:  "krb5-conf-directory",
+					Usage: "The krb5.conf coonfiguration directory",
+					Value: "/etc",
+				},
+				cli.StringFlag{
+					Name:  "krb5-conf-template",
+					Usage: "The krb5.conf template",
+					Value: "[libdefaults]\n  renew_lifetime = 7d\n  forwardable= true\n  default_realm = {{realm|upper()}}\n  ticket_lifetime = 24h\n  dns_lookup_realm = false\n  dns_lookup_kdc = false\n  #default_tgs_enctypes = {{encryption_types}}\n  #default_tkt_enctypes ={{encryption_types}}\n\n{% if domains %}\n[domain_realm]\n{% for domain in domains.split(',') %}\n  {{domain}} = {{realm|upper()}}\n{% endfor %}\n{%endif %}\n\n[logging]\n  default = FILE:/var/log/krb5kdc.log\nadmin_server = FILE:/var/log/kadmind.log\n  kdc = FILE:/var/log/krb5kdc.log\n\n[realms]\n  {{realm}} = {\n    admin_server = {{admin_server_host|default(kdc_host, True)}}\n    kdc = {{kdc_host}}\n }\n\n{# Append additional realm declarations below #}\n",
+				},
+			},
+			Action: addKerberos,
+		},
 	}
 
 	app.Before = func(c *cli.Context) error {

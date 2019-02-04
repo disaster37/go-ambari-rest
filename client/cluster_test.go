@@ -32,10 +32,10 @@ func (s *ClientTestSuite) TestCluster() {
 		assert.Equal(s.T(), "HDP-2.6", cluster.ClusterInfo.Version)
 	}
 
-	// Update cluster
+	// Rename cluster
 	if cluster != nil {
 		cluster.ClusterInfo.ClusterName = "test3"
-		cluster, err = s.client.UpdateCluster("test2", cluster)
+		cluster, err = s.client.RenameCluster("test2", cluster)
 		assert.NoError(s.T(), err)
 		assert.NotNil(s.T(), cluster)
 		if cluster != nil {
@@ -51,5 +51,8 @@ func (s *ClientTestSuite) TestCluster() {
 
 	// Create cluster with blueprint and delete them
 	// It's already tested on client_test to create fresh cluster
+
+	// Manage kerberos on cluster
+	// We test it with cli test. It' not easy to test directly.
 
 }

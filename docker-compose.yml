@@ -6,17 +6,28 @@ services:
       POSTGRES_DB: ambari
       POSTGRES_PASSWORD: ambari
       POSTGRES_USER: ambari
+  kerberos:
+    image: sequenceiq/kerberos
+    tty: true
+    hostname: kdc
+    domainname: test.local
+    environment:
+      REALM: TEST.LOCAL
+      DOMAIN_REALM: test.local
+      KERB_ADMIN_PASS: adminadmin
+      SEARCH_DOMAINS: .test.local,test.local
   ambari-server:
     image: webcenter/ambari-server:latest
     links:
       - postgres:db
-    hostname: ambari-server
+      - kerberos:kdc.test.local
     ports:
-      - 80:8080/tcp
+      - 8080:8080/tcp
   ambari-agent:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
+      - kerberos:kdc.test.local
     hostname: ambari-agent
     environment:
       http_proxy: ${http_proxy}
@@ -25,6 +36,7 @@ services:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
+      - kerberos:kdc.test.local
     hostname: ambari-agent2
     environment:
       http_proxy: ${http_proxy}
@@ -33,6 +45,7 @@ services:
     image: webcenter/ambari-agent:latest
     links:
       - ambari-server:ambari-server
+      - kerberos:kdc.test.local
     hostname: ambari-agent3
     environment:
       http_proxy: ${http_proxy}
@@ -51,6 +64,7 @@ services:
     environment:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
+
   build:
     image: golang:1.11
     working_dir: /go/src/github.com/disaster37/go-ambari-rest
@@ -61,11 +75,12 @@ services:
       http_proxy: ${http_proxy}
       https_proxy: ${https_proxy}
   curl:
-    image: appropriate/curl
+    image: appropriate/curl:latest
     links:
       - ambari-server:ambari-server
+
   cli:
-    image: debian
+    image: debian:latest
     volumes:
       - .:/workspace
     working_dir: /workspace
