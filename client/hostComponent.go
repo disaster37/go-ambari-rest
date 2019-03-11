@@ -96,6 +96,8 @@ func (c *AmbariClient) CreateHostComponent(hostComponent *HostComponent) (*HostC
 				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
 			}
 
+			log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
+
 			time.Sleep(10 * time.Second)
 		}
 
@@ -300,6 +302,8 @@ func (c *AmbariClient) StopHostComponent(clusterName string, hostname string, co
 				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
 			}
 
+			log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
+
 			time.Sleep(10 * time.Second)
 		}
 
@@ -389,6 +393,8 @@ func (c *AmbariClient) StartHostComponent(clusterName string, hostname string, c
 			if requestTask == nil {
 				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
 			}
+
+			log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
 
 			time.Sleep(10 * time.Second)
 		}

@@ -112,6 +112,26 @@ func addKerberos(c *cli.Context) error {
 		return errors.New(fmt.Sprintf("Cluster %s not found", c.String("cluster-name")))
 	}
 
+	// Check and wait all task is finished before start the kerberos settings
+	isTaskRun := true
+	for isTaskRun {
+
+		requestsTask, err := clientAmbari.Requests(c.String("cluster-name"))
+		if err != nil {
+			return err
+		}
+		isTaskRun = false
+		for _, requestTask := range requestsTask {
+			if requestTask.RequestTaskInfo.ProgressPercent < 100 {
+				isTaskRun = true
+				log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
+			}
+		}
+
+		time.Sleep(10 * time.Second)
+	}
+	log.Info("All tasks is finished, we can start to enable Kerberos")
+
 	// Add Kerberos service if needed
 	serviceKerberos, err := clientAmbari.Service(c.String("cluster-name"), KERBEROS_SERVICE)
 	if err != nil {
