@@ -18,4 +18,9 @@ func (s *ClientTestSuite) TestTask() {
 		assert.Equal(s.T(), float64(100), requestTask.RequestTaskInfo.ProgressPercent)
 		assert.Equal(s.T(), REQUEST_COMPLETED, requestTask.RequestTaskInfo.Status)
 	}
+
+	// Get tasks
+	requestsTask, err := s.client.Requests("test")
+	assert.NoError(s.T(), err)
+	assert.NotEmpty(s.T(), requestsTask)
 }

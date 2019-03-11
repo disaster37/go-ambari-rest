@@ -28,6 +28,7 @@ type RequestTaskInfo struct {
 	TaskCount       int     `json:"task_count,omitempty"`
 	ProgressPercent float64 `json:"progress_percent,omitempty"`
 	Status          string  `json:"request_status,omitempty"`
+	Context         string  `json:"request_context,omitempty"`
 }
 
 type RequestsTask struct {
@@ -36,6 +37,12 @@ type RequestsTask struct {
 
 // String permit to get Request object as Json string
 func (r *RequestTask) String() string {
+	json, _ := json.Marshal(r)
+	return string(json)
+}
+
+// String permit to get Request object as Json string
+func (r *RequestsTask) String() string {
 	json, _ := json.Marshal(r)
 	return string(json)
 }
@@ -74,4 +81,39 @@ func (c *AmbariClient) Request(clusterName string, Id int) (*RequestTask, error)
 	log.Debugf("Return requestTask: %s", requestTask)
 
 	return requestTask, nil
+}
+
+// Requests permit to get all requests
+// It return the list of requestTask
+// It return empty list if there are no tasks
+// It return error if something wrong with the API call
+func (c *AmbariClient) Requests(clusterName string) ([]RequestTask, error) {
+
+	if clusterName == "" {
+		panic("ClusterName can't be empty")
+	}
+
+	log.Debug("ClusterName: ", clusterName)
+
+	path := fmt.Sprintf("/clusters/%s/requests?fields=*", clusterName)
+	resp, err := c.Client().R().Get(path)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("Response to get: ", resp)
+	if resp.StatusCode() >= 300 {
+		if resp.StatusCode() == 404 {
+			return nil, nil
+		} else {
+			return nil, NewAmbariError(resp.StatusCode(), resp.Status())
+		}
+	}
+	requestsTask := &RequestsTask{}
+	err = json.Unmarshal(resp.Body(), requestsTask)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("Return requestsTask: %s", requestsTask)
+
+	return requestsTask.Items, nil
 }

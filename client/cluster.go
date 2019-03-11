@@ -239,6 +239,8 @@ func (c *AmbariClient) ManageKerberosOnCluster(cluster *Cluster) (*Cluster, erro
 				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
 			}
 
+			log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
+
 			time.Sleep(10 * time.Second)
 		}
 
