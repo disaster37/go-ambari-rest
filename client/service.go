@@ -334,19 +334,11 @@ func (c *AmbariClient) StartService(clusterName string, serviceName string, disa
 
 	// Wait the end of the request if request has been created
 	if requestTask != nil {
-		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
 
-			requestTask, err = c.Request(clusterName, requestTask.RequestTaskInfo.Id)
-			if err != nil {
-				return nil, err
-			}
-			if requestTask == nil {
-				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
-			}
-
-			log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
-
-			time.Sleep(10 * time.Second)
+		// Wait the end of the request
+		err = requestTask.Wait(c, clusterName)
+		if err != nil {
+			return nil, err
 		}
 
 		// Check the status
@@ -413,19 +405,10 @@ func (c *AmbariClient) StopService(clusterName string, serviceName string, enabl
 
 	if requestTask != nil {
 
-		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
-
-			requestTask, err = c.Request(clusterName, requestTask.RequestTaskInfo.Id)
-			if err != nil {
-				return nil, err
-			}
-			if requestTask == nil {
-				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
-			}
-
-			log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
-
-			time.Sleep(10 * time.Second)
+		// Wait the end of the request
+		err = requestTask.Wait(c, clusterName)
+		if err != nil {
+			return nil, err
 		}
 
 		// Check the status
@@ -507,19 +490,9 @@ func (c *AmbariClient) StopAllServices(cluster *Cluster, enableMaintenanceMode b
 	log.Debugf("Return request: %s", requestTask)
 
 	// Wait the end of the request
-	for requestTask.RequestTaskInfo.ProgressPercent < 100 {
-
-		requestTask, err = c.Request(cluster.ClusterInfo.ClusterName, requestTask.RequestTaskInfo.Id)
-		if err != nil {
-			return err
-		}
-		if requestTask == nil {
-			return NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
-		}
-
-		log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
-
-		time.Sleep(10 * time.Second)
+	err = requestTask.Wait(c, cluster.ClusterInfo.ClusterName)
+	if err != nil {
+		return err
 	}
 
 	// Check the status
@@ -605,19 +578,9 @@ func (c *AmbariClient) StartAllServices(cluster *Cluster, disableMaintenanceMode
 	log.Debugf("Return request: %s", requestTask)
 
 	// Wait the end of the request
-	for requestTask.RequestTaskInfo.ProgressPercent < 100 {
-
-		requestTask, err = c.Request(cluster.ClusterInfo.ClusterName, requestTask.RequestTaskInfo.Id)
-		if err != nil {
-			return err
-		}
-		if requestTask == nil {
-			return NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
-		}
-
-		log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
-
-		time.Sleep(10 * time.Second)
+	err = requestTask.Wait(c, cluster.ClusterInfo.ClusterName)
+	if err != nil {
+		return err
 	}
 
 	// Check the status
