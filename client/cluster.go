@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 // Cluster item
@@ -229,19 +228,11 @@ func (c *AmbariClient) ManageKerberosOnCluster(cluster *Cluster) (*Cluster, erro
 
 	// Wait the end of the request if request has been created
 	if requestTask != nil {
-		for requestTask.RequestTaskInfo.ProgressPercent < 100 {
 
-			requestTask, err = c.Request(cluster.ClusterInfo.ClusterName, requestTask.RequestTaskInfo.Id)
-			if err != nil {
-				return nil, err
-			}
-			if requestTask == nil {
-				return nil, NewAmbariError(404, "Request with Id %d not found", requestTask.RequestTaskInfo.Id)
-			}
-
-			log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", requestTask.RequestTaskInfo.Context, requestTask.RequestTaskInfo.Id, requestTask.RequestTaskInfo.Status, requestTask.RequestTaskInfo.ProgressPercent)
-
-			time.Sleep(10 * time.Second)
+		// Wait the end of the request
+		err = requestTask.Wait(c, cluster.ClusterInfo.ClusterName)
+		if err != nil {
+			return nil, err
 		}
 
 		// Check the status

@@ -23,4 +23,8 @@ func (s *ClientTestSuite) TestTask() {
 	requestsTask, err := s.client.Requests("test")
 	assert.NoError(s.T(), err)
 	assert.NotEmpty(s.T(), requestsTask)
+
+	// Wait task is finished
+	err = requestTask.Wait(s.client, "test")
+	assert.NoError(s.T(), err)
 }

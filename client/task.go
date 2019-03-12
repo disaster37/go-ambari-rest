@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"time"
 )
 
 const (
@@ -29,6 +30,7 @@ type RequestTaskInfo struct {
 	ProgressPercent float64 `json:"progress_percent,omitempty"`
 	Status          string  `json:"request_status,omitempty"`
 	Context         string  `json:"request_context,omitempty"`
+	ClusterName     string  `json:"cluster_name,omitempty"`
 }
 
 type RequestsTask struct {
@@ -39,6 +41,34 @@ type RequestsTask struct {
 func (r *RequestTask) String() string {
 	json, _ := json.Marshal(r)
 	return string(json)
+}
+
+// Permit to wait the rerquest task is finished
+// It can return error if API call failed
+func (r *RequestTask) Wait(c *AmbariClient, clusterName string) error {
+	if r.RequestTaskInfo != nil {
+		isRun := true
+		for isRun {
+			requestTask, err := c.Request(clusterName, r.RequestTaskInfo.Id)
+			if err != nil {
+				return err
+			}
+			*r = *requestTask
+			if r.RequestTaskInfo.ProgressPercent < 100 {
+				log.Debugf("Task '%s' (%d) is not yet finished, state is %s (%f %%)", r.RequestTaskInfo.Context, r.RequestTaskInfo.Id, r.RequestTaskInfo.Status, r.RequestTaskInfo.ProgressPercent)
+				time.Sleep(10 * time.Second)
+			} else {
+				isRun = false
+			}
+		}
+
+		log.Debugf("Task '%s' (%d) is finished with state %s", r.RequestTaskInfo.Context, r.RequestTaskInfo.Id, r.RequestTaskInfo.Status)
+	} else {
+		log.Debugf("Task is empty...")
+	}
+
+	return nil
+
 }
 
 // String permit to get Request object as Json string
